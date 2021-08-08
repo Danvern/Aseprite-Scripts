@@ -1,0 +1,4 @@
+v0.1a
+- First release.
+- Simple outer edge of selection AA stencil.
+- Min-max thresholds for controlling stencil border bounds.
