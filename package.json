@@ -1,0 +1,18 @@
+{
+  "name": "a111-utilities",
+  "displayName": "A-111 Utilities",
+  "description": "Productivity scripts for spriting.",
+  "version": "0.1",
+  "author": { "name": "Artificer-111",
+              "email": "artificeroneeleven@gmail.com",
+              "url": "https://twitter.com/111Artificer" },
+  "contributors": [ ],
+  "publisher": "Artificer-111",
+  "license": "CC-BY-4.0",
+  "categories": [ "Scripts" ],
+  "contributes": {
+    "scripts": [
+        { "path": "./[A111] AA Helper.lua" }
+    ]
+  }
+}
