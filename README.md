@@ -5,7 +5,7 @@ v0.0.1 by Artificer-111 (Jermaine Smith)
 Current modules
 - Anti-Alias Assistant v0.1
 
-AA Assistant
+AA Assistant - Look in Scripts Menu
 ______________________________________________________________________
 1. Select an area you want to AA around.
 2. Set the minimum and maximum distance to AA from corners.
