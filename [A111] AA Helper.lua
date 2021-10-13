@@ -1,5 +1,5 @@
 function init(plugin)
-    -- we can use "plugin.preferences" as a table with fields for
+    -- we can use "plugin.p2references" as a table with fields for
     -- our plugin (these fields are saved between sessions)
     if plugin.preferences.count == nil then
         plugin.preferences.count = 0
@@ -35,10 +35,17 @@ function init(plugin)
                     max=100,
                     value=0
                 }
+                info:check{
+                    id="aliasInside", 
+                    label="AA Inside Selection", 
+                    text="Anti-alias inside of the selection versus outside of it.", 
+                    selected=false
+                }
                 info:button{id="ok",text="OK"}
                 info:show()
                 local aMax=info.data.aliasMax
                 local aMin=info.data.aliasMin
+                local aInside=info.data.aliasInside
 
             function run()
                 function getAdjacent(x, y)
@@ -95,28 +102,45 @@ function init(plugin)
                         ax = coord[1]
                         ay = coord[2]
                         strand = {}
-                        if not baseSelection:contains(ax, ay) then
-                            d = 0
-                            -- strand cell core
-                            cx = (ax - x)
-                            cy = (ay - y)
-                            -- adjacent to current strand cell
-                            sx = math.abs(ay - y)
-                            sy = math.abs(ax - x)
-                            -- started with empty space to upper right, or bottom left
+                        
+                        d = 0
+                        -- strand cell core
+                        cx = (ax - x)
+                        cy = (ay - y)
+                        -- adjacent to current strand cell
+                        sx = math.abs(ay - y)
+                        sy = math.abs(ax - x)
+                        
+                        if not baseSelection:contains(ax, ay) and not aInside then
+                            -- if the selected region is in a positive direction relative to the border
                             positive = baseSelection:contains(ax + cx * d + sx, ay + cy * d + sy)
                             while ((positive and baseSelection:contains(ax + cx * d + sx, ay + cy * d + sy)) or
                             (not positive and baseSelection:contains(ax + cx * d - sx, ay + cy * d - sy)))
                             and not baseSelection:contains(ax + cx * d, ay + cy * d) do
-                                table.insert(strand, {ax + (ax - x) * d, ay + (ay - y) * d})
+                                table.insert(strand, {ax + cx * d, ay + cy * d})
                                 d = d + 1
                             end
-                            for i=math.floor(#strand*(aMin/100)+1), math.floor(#strand*(aMax/100)), 1
+                        elseif aInside then
+                            -- inside corner is part of selection
+                            table.insert(strand, 1, {x, y})
+                            -- if the selected region is in a positive direction relative to the border
+                            positive = not baseSelection:contains(ax + cx * d - sx, ay + cy * d - sy)
+                            while ((positive and not baseSelection:contains(ax + cx * d - sx, ay + cy * d - sy)) or
+                            (not positive and not baseSelection:contains(ax + cx * d + sx, ay + cy * d + sy)))
+                            and baseSelection:contains(ax + cx * d, ay + cy * d) do
+                                table.insert(strand, {ax + cx * d, ay + cy * d})
+                                d = d + 1
+                            end
+                        end
+                            
+                        if #strand > 0 then
+                            for i=math.floor(#strand*(aMin/100)), math.floor(#strand*(aMax/100)), 1
                             do
                              -- print(#strand)
                                 table.insert(border, strand[i])
                             end
                         end
+                        
                     end
                 end
                 for index, coord in ipairs(corners) do
