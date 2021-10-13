@@ -1,8 +1,12 @@
 function init(plugin)
-    -- we can use "plugin.p2references" as a table with fields for
-    -- our plugin (these fields are saved between sessions)
-    if plugin.preferences.count == nil then
-        plugin.preferences.count = 0
+    if plugin.preferences.aliasMax == nil then
+        plugin.preferences.aliasMax = 50
+    end
+        if plugin.preferences.aliasMin == nil then
+        plugin.preferences.aliasMin = 0
+    end
+        if plugin.preferences.aliasInside == nil then
+        plugin.preferences.aliasInside = false
     end
 
     plugin:newCommand{
@@ -17,7 +21,8 @@ function init(plugin)
             if baseSelection.isEmpty then return end
 
             local info = Dialog()
-                info:label{ id=string,
+                info:label{ 
+                    id=string,
                     label="-------- AA Assist Control Panel --------",
                     text="Set percentages and other values to control the selection area."
                 }
@@ -26,26 +31,39 @@ function init(plugin)
                     label="Max Threshold",
                     min=0,
                     max=100,
-                    value=50
+                    value=plugin.preferences.aliasMax
                 }
                 info:slider{
                     id="aliasMin",
                     label="Min Threshold",
                     min=0,
                     max=100,
-                    value=0
+                    value=plugin.preferences.aliasMin
                 }
                 info:check{
                     id="aliasInside", 
                     label="AA Inside Selection", 
                     text="Anti-alias inside of the selection versus outside of it.", 
-                    selected=false
+                    selected=plugin.preferences.aliasInside
+                }
+                info:button{
+                    id="resetSettings",
+                    text="Reset Settings", 
+                    onclick=function()
+                        info.data.aliasMax=50
+                        info.data.aliasMin=0
+                        info.data.aliasInside=false
+                        print("(WIP) Settings Have Been Reset")
+                    end
                 }
                 info:button{id="ok",text="OK"}
                 info:show()
                 local aMax=info.data.aliasMax
                 local aMin=info.data.aliasMin
                 local aInside=info.data.aliasInside
+                plugin.preferences.aliasMax=aMax
+                plugin.preferences.aliasMin=aMin
+                plugin.preferences.aliasInside=aInside
 
             function run()
                 function getAdjacent(x, y)
