@@ -203,6 +203,7 @@ function init(plugin)
                 if aAutomate then
                     spr.selection = Selection()
                     local image = app.activeImage:clone()
+                    local sourceImage = app.activeImage
                     local cel = app.activeImage.cel
                     local pc = app.pixelColor
                     
@@ -227,20 +228,20 @@ function init(plugin)
                                 return pc.rgba(rVal, gVal, bVal)
                             end
 
-                            if aInside then
-                                sourceValue = image:getPixel(coord[1] - cel.position.x, coord[2] - cel.position.y)
+                            if aInside and coord[7] < 1 then
+                                sourceValue = sourceImage:getPixel(coord[1] - cel.position.x, coord[2] - cel.position.y)
                                 --inletX = coord[3] - clamp(-1, coord[1] - coord[3], 1)
                                 --inletY = coord[4] - clamp(-1, coord[2] - coord[4], 1)
                                 inletX = coord[3] - strand[2]
                                 inletY = coord[4] - strand[3]
-                                inletValue = image:getPixel(inletX - cel.position.x, inletY - cel.position.y)
+                                inletValue = sourceImage:getPixel(inletX - cel.position.x, inletY - cel.position.y)
                                 --pAdjacent = image:getPixel(coord[1] + coord[5] - cel.position.x, coord[2] + coord[6] - cel.position.y)
                                 --nAdjacent = image:getPixel(coord[1] - coord[5] - cel.position.x, coord[2] - coord[6] - cel.position.y)
                                 --targetValue = mixColour(pAdjacent, nAdjacent, sourceValue, 0.5)
                                 image:drawPixel(coord[1] - cel.position.x, coord[2] - cel.position.y, mixColour(sourceValue, inletValue, nil, coord[7]))
-                            else
-                                sourceValue = image:getPixel(coord[3] - cel.position.x, coord[4] - cel.position.y)
-                                underValue = image:getPixel(coord[1] - cel.position.x, coord[2] - cel.position.y)
+                            elseif not aInside and coord[7] > 0 then
+                                sourceValue = sourceImage:getPixel(coord[3] - cel.position.x, coord[4] - cel.position.y)
+                                underValue = sourceImage:getPixel(coord[1] - cel.position.x, coord[2] - cel.position.y)
                                 image:drawPixel(coord[1] - cel.position.x, coord[2] - cel.position.y, mixColour(sourceValue, underValue, nil, coord[7]))
                             end
                         end
