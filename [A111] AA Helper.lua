@@ -8,6 +8,9 @@ function init(plugin)
         if plugin.preferences.aliasInside == nil then
         plugin.preferences.aliasInside = false
     end
+    if plugin.preferences.aliasAutomatic == nil then
+        plugin.preferences.aliasAutomatic = false
+    end
 
     plugin:newCommand{
         id="AATool",
@@ -46,6 +49,12 @@ function init(plugin)
                     text="Anti-alias inside of the selection versus outside of it.", 
                     selected=plugin.preferences.aliasInside
                 }
+                info:check{
+                    id="aliasAutomatic",
+                    label="AA Automatically", 
+                    text="Automatically apply colors instead of stenciling the selection.", 
+                    selected=plugin.preferences.aliasAutomatic
+                }
                 info:button{
                     id="resetSettings",
                     text="Reset Settings", 
@@ -53,6 +62,7 @@ function init(plugin)
                         info.data.aliasMax=50
                         info.data.aliasMin=0
                         info.data.aliasInside=false
+                        info.data.aliasAutomatic=false
                         print("(WIP) Settings Have Been Reset")
                     end
                 }
@@ -61,9 +71,11 @@ function init(plugin)
                 local aMax=info.data.aliasMax
                 local aMin=info.data.aliasMin
                 local aInside=info.data.aliasInside
+                local aAutomate=info.data.aliasAutomatic
                 plugin.preferences.aliasMax=aMax
                 plugin.preferences.aliasMin=aMin
                 plugin.preferences.aliasInside=aInside
+                plugin.preferences.aliasAutomatic=aAutomate
 
             function run()
                 function getAdjacent(x, y)
@@ -135,27 +147,38 @@ function init(plugin)
                             while ((positive and baseSelection:contains(ax + cx * d + sx, ay + cy * d + sy)) or
                             (not positive and baseSelection:contains(ax + cx * d - sx, ay + cy * d - sy)))
                             and not baseSelection:contains(ax + cx * d, ay + cy * d) do
-                                table.insert(strand, {ax + cx * d, ay + cy * d})
+                                pixel = {ax + cx * d, ay + cy * d, x, y, sx, sy, 0}
+                                table.insert(strand, pixel)
+                                --print(string.format("Tested: %d, %d, %d, %d, %d, %d", pixel[1], pixel[2], pixel[3], pixel[4], pixel[5], pixel[6]))
                                 d = d + 1
                             end
                         elseif aInside then
                             -- inside corner is part of selection
-                            table.insert(strand, 1, {x, y})
+                            table.insert(strand, 1, {x, y, x, y, sx, sy, 0})
                             -- if the selected region is in a positive direction relative to the border
                             positive = not baseSelection:contains(ax + cx * d - sx, ay + cy * d - sy)
                             while ((positive and not baseSelection:contains(ax + cx * d - sx, ay + cy * d - sy)) or
                             (not positive and not baseSelection:contains(ax + cx * d + sx, ay + cy * d + sy)))
                             and baseSelection:contains(ax + cx * d, ay + cy * d) do
-                                table.insert(strand, {ax + cx * d, ay + cy * d})
+                                -- the coordinates of the target pixel, origin pixel, and sx/sy
+                                pixel = {ax + cx * d, ay + cy * d, x, y, sx, sy, 0}
+                                table.insert(strand, pixel)
+                                --print(string.format("Tested: %d, %d, %d, %d, %d, %d", pixel[1], pixel[2], pixel[3], pixel[4], pixel[5], pixel[6]))
                                 d = d + 1
                             end
                         end
                             
                         if #strand > 0 then
-                            for i=math.floor(#strand*(aMin/100)), math.floor(#strand*(aMax/100)), 1
-                            do
+                            for i=math.floor(#strand*(aMin/100)), math.floor(#strand*(aMax/100)), 1 do
+                                if strand[i] ~= nil then
                              -- print(#strand)
-                                table.insert(border, strand[i])
+                                -- table.insert(border, {strand[i], i / #strand})
+                                --  print(strand[i])
+                                -- print(string.format("Tested: %d, %d for total %d", strand[i], strand[i][1], strand[i][2]))
+                                --print("wooo")
+                                    strand[i][7] = i / #strand
+                                    table.insert(border, strand[i])
+                                end
                             end
                         end
                         
@@ -165,13 +188,57 @@ function init(plugin)
                     edgeCrawl(coord[1], coord[2], border)
                 end
                             
-                -- returned found pixels as a selection
-                newSelection = Selection()
-                for index, coord in ipairs(border) do
-                    newSelection:add(Selection(Rectangle(coord[1], coord[2], 1, 1)))
-                    -- print(newSelection.bounds)
+               
+                
+                -- color selection
+                if aAutomate then
+                    spr.selection = Selection()
+                    local image = app.activeImage:clone()
+                    local cel = app.activeImage.cel
+                    local pc = app.pixelColor
+                    
+                    for index, coord in ipairs(border) do
+                        --print(table.concat(coord, " "))
+                        --print(cel.position)
+                        --print(cel.position.x)
+                        --print(image)
+                        function mixClean(c1, c2, source, colorFunction, percent)
+                            if source ~= nil then
+                                if source == c1 then c1 = c2
+                                elseif source == c2 then c2 = c1
+                                end
+                            end
+                            return colorFunction(c1) * percent + colorFunction(c2) * (1 - percent)
+                        end
+                        function mixColour(c1, c2, mask, percent)
+                            rVal = mixClean(c1, c2, mask, pc.rgbaR, percent)
+                            gVal = mixClean(c1, c2, mask, pc.rgbaG, percent)
+                            bVal = mixClean(c1, c2, mask, pc.rgbaB, percent)
+                            return pc.rgba(rVal, gVal, bVal)
+                        end
+
+                        if aInside then
+                            sourceValue = image:getPixel(coord[3] - cel.position.x, coord[4] - cel.position.y)
+                            pAdjacent = image:getPixel(coord[1] + coord[5] - cel.position.x, coord[2] + coord[6] - cel.position.y)
+                            nAdjacent = image:getPixel(coord[1] - coord[5] - cel.position.x, coord[2] - coord[6] - cel.position.y)
+                            targetValue = mixColour(pAdjacent, nAdjacent, sourceValue, 0.5)
+                            image:drawPixel(coord[1] - cel.position.x, coord[2] - cel.position.y, mixColour(targetValue, sourceValue, nil, coord[7]))
+                        else
+                            sourceValue = image:getPixel(coord[3] - cel.position.x, coord[4] - cel.position.y)
+                            underValue = image:getPixel(coord[1] - cel.position.x, coord[2] - cel.position.y)
+                            image:drawPixel(coord[1] - cel.position.x, coord[2] - cel.position.y, mixColour(sourceValue, underValue, nil, coord[7]))
+                        end
+                    end
+                    app.activeImage:drawImage(image)
+                else
+                     -- returned found pixels as a selection
+                    newSelection = Selection()
+                    for index, coord in ipairs(border) do
+                        newSelection:add(Selection(Rectangle(coord[1], coord[2], 1, 1)))
+                        -- print(newSelection.bounds)
+                    end
+                    spr.selection = newSelection
                 end
-                spr.selection = newSelection
             end
 
             -- if info.data.ok then
@@ -185,7 +252,6 @@ function init(plugin)
 end
 
 function exit(plugin)
-  print("Aseprite is closing my plugin, MyFirstCommand was called "
-        .. plugin.preferences.count .. " times")
+
 end
 
