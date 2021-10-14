@@ -130,8 +130,8 @@ function init(plugin)
                 end
                 
                 -- expand outwards from corner pixel to define a partial outline based on thresholds
-                border = {}
-                edgeCrawl=function(x, y, border)
+                borderWeb = {}
+                edgeCrawl=function(x, y, borderWeb)
                     for index, coord in ipairs(getAdjacent(x, y)) do
                         ax = coord[1]
                         ay = coord[2]
@@ -158,14 +158,14 @@ function init(plugin)
                             end
                         elseif aInside then
                             -- inside corner is part of selection
-                            table.insert(strand, 1, {x, y, x, y, sx, sy, 0})
+                            table.insert(strand, 1, {x, y, x, y, sx, sy, 1})
                             -- if the selected region is in a positive direction relative to the border
                             positive = not baseSelection:contains(ax + cx * d - sx, ay + cy * d - sy)
                             while ((positive and not baseSelection:contains(ax + cx * d - sx, ay + cy * d - sy)) or
                             (not positive and not baseSelection:contains(ax + cx * d + sx, ay + cy * d + sy)))
                             and baseSelection:contains(ax + cx * d, ay + cy * d) do
                                 -- the coordinates of the target pixel, origin pixel, and sx/sy
-                                pixel = {ax + cx * d, ay + cy * d, x, y, sx, sy, 0}
+                                pixel = {ax + cx * d, ay + cy * d, x, y, sx, sy, 1}
                                 table.insert(strand, pixel)
                                 --print(string.format("Tested: %d, %d, %d, %d, %d, %d", pixel[1], pixel[2], pixel[3], pixel[4], pixel[5], pixel[6]))
                                 d = d + 1
@@ -176,7 +176,7 @@ function init(plugin)
                             for i=math.floor(#strand*(aMin/100)), math.floor(#strand*(aMax/100)), 1 do
                                 if strand[i] ~= nil then
                              -- print(#strand)
-                                -- table.insert(border, {strand[i], i / #strand})
+                                -- table.insert(borderWeb, {strand[i], i / #strand})
                                 --  print(strand[i])
                                 -- print(string.format("Tested: %d, %d for total %d", strand[i], strand[i][1], strand[i][2]))
                                 --print("wooo")
@@ -186,15 +186,15 @@ function init(plugin)
                                     else
                                         strand[i][7] = 1.0 - clamp(1.0, i / ((#strand) * aScale), 0.0)
                                     end
-                                    table.insert(border, strand[i])
+                                    --table.insert(borderWeb, strand[i])
                                 end
                             end
+                            table.insert(borderWeb, {strand, cx, cy})
                         end
-                        
                     end
                 end
                 for index, coord in ipairs(corners) do
-                    edgeCrawl(coord[1], coord[2], border)
+                    edgeCrawl(coord[1], coord[2], borderWeb)
                 end
                             
                
@@ -206,48 +206,56 @@ function init(plugin)
                     local cel = app.activeImage.cel
                     local pc = app.pixelColor
                     
-                    for index, coord in ipairs(border) do
-                        --print(table.concat(coord, " "))
-                        --print(cel.position)
-                        --print(cel.position.x)
-                        --print(image)
-                        function mixClean(c1, c2, source, colorFunction, percent)
-                            if source ~= nil then
-                                if source == c1 then c1 = c2
-                                elseif source == c2 then c2 = c1
+                    for index, strand in ipairs(borderWeb) do
+                        for index, coord in ipairs(strand[1]) do
+                            --print(table.concat(coord, " "))
+                            --print(cel.position)
+                            --print(cel.position.x)
+                            --print(image)
+                            function mixClean(c1, c2, source, colorFunction, percent)
+                                if source ~= nil then
+                                    if source == c1 then c1 = c2
+                                    elseif source == c2 then c2 = c1
+                                    end
                                 end
+                                return colorFunction(c1) * percent + colorFunction(c2) * (1 - percent)
                             end
-                            return colorFunction(c1) * percent + colorFunction(c2) * (1 - percent)
-                        end
-                        function mixColour(c1, c2, mask, percent)
-                            rVal = mixClean(c1, c2, mask, pc.rgbaR, percent)
-                            gVal = mixClean(c1, c2, mask, pc.rgbaG, percent)
-                            bVal = mixClean(c1, c2, mask, pc.rgbaB, percent)
-                            return pc.rgba(rVal, gVal, bVal)
-                        end
+                            function mixColour(c1, c2, mask, percent)
+                                rVal = mixClean(c1, c2, mask, pc.rgbaR, percent)
+                                gVal = mixClean(c1, c2, mask, pc.rgbaG, percent)
+                                bVal = mixClean(c1, c2, mask, pc.rgbaB, percent)
+                                return pc.rgba(rVal, gVal, bVal)
+                            end
 
-                        if aInside then
-                            sourceValue = image:getPixel(coord[1] - cel.position.x, coord[2] - cel.position.y)
-                            inletX = coord[3] - clamp(-1, coord[1] - coord[3], 1)
-                            inletY = coord[4] - clamp(-1, coord[2] - coord[4], 1)
-                            inletValue = image:getPixel(inletX - cel.position.x, inletY - cel.position.y)
-                            --pAdjacent = image:getPixel(coord[1] + coord[5] - cel.position.x, coord[2] + coord[6] - cel.position.y)
-                            --nAdjacent = image:getPixel(coord[1] - coord[5] - cel.position.x, coord[2] - coord[6] - cel.position.y)
-                            --targetValue = mixColour(pAdjacent, nAdjacent, sourceValue, 0.5)
-                            image:drawPixel(coord[1] - cel.position.x, coord[2] - cel.position.y, mixColour(sourceValue, inletValue, nil, coord[7]))
-                        else
-                            sourceValue = image:getPixel(coord[3] - cel.position.x, coord[4] - cel.position.y)
-                            underValue = image:getPixel(coord[1] - cel.position.x, coord[2] - cel.position.y)
-                            image:drawPixel(coord[1] - cel.position.x, coord[2] - cel.position.y, mixColour(sourceValue, underValue, nil, coord[7]))
+                            if aInside then
+                                sourceValue = image:getPixel(coord[1] - cel.position.x, coord[2] - cel.position.y)
+                                --inletX = coord[3] - clamp(-1, coord[1] - coord[3], 1)
+                                --inletY = coord[4] - clamp(-1, coord[2] - coord[4], 1)
+                                inletX = coord[3] - strand[2]
+                                inletY = coord[4] - strand[3]
+                                inletValue = image:getPixel(inletX - cel.position.x, inletY - cel.position.y)
+                                --pAdjacent = image:getPixel(coord[1] + coord[5] - cel.position.x, coord[2] + coord[6] - cel.position.y)
+                                --nAdjacent = image:getPixel(coord[1] - coord[5] - cel.position.x, coord[2] - coord[6] - cel.position.y)
+                                --targetValue = mixColour(pAdjacent, nAdjacent, sourceValue, 0.5)
+                                image:drawPixel(coord[1] - cel.position.x, coord[2] - cel.position.y, mixColour(sourceValue, inletValue, nil, coord[7]))
+                            else
+                                sourceValue = image:getPixel(coord[3] - cel.position.x, coord[4] - cel.position.y)
+                                underValue = image:getPixel(coord[1] - cel.position.x, coord[2] - cel.position.y)
+                                image:drawPixel(coord[1] - cel.position.x, coord[2] - cel.position.y, mixColour(sourceValue, underValue, nil, coord[7]))
+                            end
                         end
                     end
                     app.activeImage:drawImage(image)
                 else
                      -- returned found pixels as a selection
                     newSelection = Selection()
-                    for index, coord in ipairs(border) do
-                        newSelection:add(Selection(Rectangle(coord[1], coord[2], 1, 1)))
+                    for index, strand in ipairs(borderWeb) do
+                        for index, coord in ipairs(strand[1]) do
+                            if (coord[7] > 0 and not aInside) or (coord[7] < 1 and aInside) then
+                                newSelection:add(Selection(Rectangle(coord[1], coord[2], 1, 1)))
+                            end
                         -- print(newSelection.bounds)
+                        end
                     end
                     spr.selection = newSelection
                 end
