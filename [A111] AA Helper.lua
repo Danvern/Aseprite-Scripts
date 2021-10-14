@@ -70,6 +70,7 @@ function init(plugin)
                 info:show()
                 local aMax=info.data.aliasMax
                 local aMin=info.data.aliasMin
+                local aScale=1.0
                 local aInside=info.data.aliasInside
                 local aAutomate=info.data.aliasAutomatic
                 plugin.preferences.aliasMax=aMax
@@ -85,6 +86,9 @@ function init(plugin)
                     adj[3]={x, y-1}
                     adj[4]={x, y+1}
                     return adj
+                end
+                function clamp(maximum, number, minimum)
+                    return math.max(math.min(maximum, number), minimum)
                 end
                 
                 -- check if a pixel is a corner of the selection boundary
@@ -176,7 +180,12 @@ function init(plugin)
                                 --  print(strand[i])
                                 -- print(string.format("Tested: %d, %d for total %d", strand[i], strand[i][1], strand[i][2]))
                                 --print("wooo")
-                                    strand[i][7] = i / #strand
+                                    -- TO DO: add custom scaling threshold
+                                    if aInside then
+                                        strand[i][7] = clamp(1.0, i / (#strand * aScale), 0.0)
+                                    else
+                                        strand[i][7] = 1.0 - clamp(1.0, i / ((#strand) * aScale), 0.0)
+                                    end
                                     table.insert(border, strand[i])
                                 end
                             end
@@ -222,7 +231,7 @@ function init(plugin)
                             pAdjacent = image:getPixel(coord[1] + coord[5] - cel.position.x, coord[2] + coord[6] - cel.position.y)
                             nAdjacent = image:getPixel(coord[1] - coord[5] - cel.position.x, coord[2] - coord[6] - cel.position.y)
                             targetValue = mixColour(pAdjacent, nAdjacent, sourceValue, 0.5)
-                            image:drawPixel(coord[1] - cel.position.x, coord[2] - cel.position.y, mixColour(targetValue, sourceValue, nil, coord[7]))
+                            image:drawPixel(coord[1] - cel.position.x, coord[2] - cel.position.y, mixColour(sourceValue, targetValue, nil, coord[7]))
                         else
                             sourceValue = image:getPixel(coord[3] - cel.position.x, coord[4] - cel.position.y)
                             underValue = image:getPixel(coord[1] - cel.position.x, coord[2] - cel.position.y)
