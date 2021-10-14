@@ -227,7 +227,7 @@ function init(plugin)
                         end
 
                         if aInside then
-                            sourceValue = image:getPixel(coord[3] - cel.position.x, coord[4] - cel.position.y)
+                            sourceValue = image:getPixel(coord[1] - cel.position.x, coord[2] - cel.position.y)
                             pAdjacent = image:getPixel(coord[1] + coord[5] - cel.position.x, coord[2] + coord[6] - cel.position.y)
                             nAdjacent = image:getPixel(coord[1] - coord[5] - cel.position.x, coord[2] - coord[6] - cel.position.y)
                             targetValue = mixColour(pAdjacent, nAdjacent, sourceValue, 0.5)
