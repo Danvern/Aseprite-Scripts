@@ -260,7 +260,10 @@ function run()
         comparisonIndex = comparisonIndex + 1
         difference = 0
         clockDifference = web[comparisonIndex].normalFacing - web[strandIndex].normalFacing
-        counterDifference = web[comparisonIndex].normalFacing - 8 - web[strandIndex].normalFacing
+        counterDifference = math.max(clockDifference - 8, -clockDifference - 8)
+        if clockDifference < 0 then
+            counterDifference = counterDifference * -1
+        end
         if math.abs(clockDifference) < math.abs(counterDifference) then
             difference = clockDifference
         else
