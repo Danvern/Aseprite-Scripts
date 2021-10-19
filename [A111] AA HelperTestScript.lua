@@ -9,6 +9,9 @@ local aMin=0
 local aScale=1.0
 local aInside=true
 local aAutomate=true
+local aTransparency=true
+local aConcaveSpacing=2
+local aConcaveScale=1.0
 
 function run()
     function getAdjacent(x, y)
@@ -221,14 +224,18 @@ function run()
         pixel.compareY = strand.components[cornerIndex].y + directionsY[rotateFacing(strand.normalFacing, normalOffset)]
         percent = 0.0
         if aInside then
+            if primaryVertexOffset > 0 then
             -- print(index)
             -- print(#strand.components)
-            percent = clamp(1.0, index / (#strand.components * aScale), 0.0)
+                percent = clamp(1.0, index / (#strand.components * aScale), 0.0)
+            else
+                percent = 1.0 - clamp(1.0, (index - 1) / (#strand.components * aScale), 0.0)
+            end
         else
             percent = 1.0 - clamp(1.0, index / ((#strand.components) * aScale), 0.0)
         end
         pixel.percent = percent
-        print(string.format("Pixel %d / %d (%f) - Normal %d + %d", index, #strand.components, pixel.percent, strand.normalFacing, normalOffset))
+        -- print(string.format("Pixel %d / %d (%f) - Normal %d + %d", index, #strand.components, pixel.percent, strand.normalFacing, normalOffset))
         return pixel
     end
     
@@ -248,7 +255,7 @@ function run()
         else
             difference = counterDifference
         end
-        print(string.format("Difference between strand normals %d and %d is (%d - %d = %d)", strandIndex, comparisonIndex, web[strandIndex].normalFacing, web[comparisonIndex].normalFacing, difference))
+        -- print(string.format("Difference between strand normals %d and %d is (%d - %d = %d)", strandIndex, comparisonIndex, web[strandIndex].normalFacing, web[comparisonIndex].normalFacing, difference))
         return difference
     end
     
@@ -407,21 +414,34 @@ function run()
                     elseif source == c2 then c2 = c1
                     end
                 end
-                return colorFunction(c1) * percent + colorFunction(c2) * (1 - percent)
+                realPercent = percent
+                if not aTransparency then
+                    if pc.rgbaA(c1) == 0 then                    
+                        realPercent = 0.0
+                    elseif pc.rgbaA(c2) == 0 then
+                        realPercent = 1.0
+                    end
+                end
+                return colorFunction(c1) * realPercent + colorFunction(c2) * (1 - realPercent)
             end
             
             function mixColour(c1, c2, mask, percent)
                 rVal = mixClean(c1, c2, mask, pc.rgbaR, percent)
                 gVal = mixClean(c1, c2, mask, pc.rgbaG, percent)
                 bVal = mixClean(c1, c2, mask, pc.rgbaB, percent)
-                return pc.rgba(rVal, gVal, bVal)
+                aVal = 255
+                if aTransparency then
+                    aVal = mixClean(c1, c2, mask, pc.rgbaA, percent)
+                end
+                return pc.rgba(rVal, gVal, bVal, aVal)
             end
 
-            print("test")
+            -- print("test")
             if aInside and pixel.percent < 1 then
                 sourceValue = sourceImage:getPixel(pixel.x - cel.position.x, pixel.y - cel.position.y)
                 inletValue = sourceImage:getPixel(pixel.compareX - cel.position.x, pixel.compareY - cel.position.y)
                 print(string.format("S:(%d, %d), C:(%d, %d), %f P", pixel.x, pixel.y, pixel.compareX, pixel.compareY, pixel.percent))
+                print(inletValue)
                 image:drawPixel(pixel.x - cel.position.x, pixel.y - cel.position.y, mixColour(sourceValue, inletValue, nil, pixel.percent))
             elseif not aInside and pixel.percent > 0 then
                 sourceValue = sourceImage:getPixel(pixel.sourceX - cel.position.x, pixel.sourceY - cel.position.y)
