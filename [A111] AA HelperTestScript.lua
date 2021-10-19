@@ -180,7 +180,7 @@ function run()
                     end
                     table.insert(strand, {["x"] = driver[1], ["y"] = driver[2]})
                     markPixel()
-                    table.insert(borderWeb, {["components"] = strand, ["normalFacing"] = rotateFacing(facing, spinDirection * -2)})
+                    table.insert(borderWeb, {["components"] = strand, ["normalFacing"] = rotateFacing(facing, spinDirection * -2), ["spin"] = spinDirection})
                     if #webCluster == 0 then
                         -- print(" completed strand at: "..table.concat(driver, ", ").." facing "..facing.." length "..#strand..". rotating...")
                     end
@@ -237,7 +237,7 @@ function run()
                 percent = 1.0 - clamp(1.0, (index - 1) / (#strand.components * aScale), 0.0)
             end
         else
-            if primaryVertexOffset > 0 then
+            if primaryVertexOffset > 0 or (strand.spin < 0 and primaryVertexOffset < 0) then
             -- print(index)
             -- print(#strand.components)
                 percent = clamp(1.0, (index - 1) / (#strand.components * aScale), 0.0)
@@ -246,7 +246,7 @@ function run()
             end
         end
         pixel.percent = percent
-        -- print(string.format("Pixel %d / %d (%f) - Normal %d + %d", index, #strand.components, pixel.percent, strand.normalFacing, normalOffset))
+        print(string.format("(%d, %d) Pixel %d / %d (%f) - Normal %d + %d", pixel.x, pixel.y, index, #strand.components, pixel.percent, strand.normalFacing, normalOffset))
         return pixel
     end
     
@@ -268,6 +268,12 @@ function run()
             difference = clockDifference
         else
             difference = counterDifference
+        end
+        -- so suggested rotation matches
+        if difference == 4 and web[strandIndex].spin < 1 then
+            difference = -4
+        elseif difference == -4 and web[strandIndex].spin > 1 then
+            difference = 4
         end
         -- print(string.format("Difference between strand normals %d and %d is (%d - %d = %d)", strandIndex, comparisonIndex, web[strandIndex].normalFacing, web[comparisonIndex].normalFacing, difference))
         return difference
@@ -310,20 +316,27 @@ function run()
                     end
                 else
                     if facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) == -1 then
-                        for index, point in ipairs(strand.components) do
-                            table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                        print("gentle slope")
+                        if facingChange(strandIndex, -1, squid) > -4 then
+                            for index, point in ipairs(strand.components) do
+                                table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                            end
                         end
                     elseif facingChange(strandIndex, -1, squid) == 1 and facingChange(strandIndex, 1, squid) > 0 then
-                        for index, point in ipairs(strand.components) do
-                            table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                        print("gentle slope")
+                        if facingChange(strandIndex, 1, squid) < 4 then
+                            for index, point in ipairs(strand.components) do
+                                table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                            end
                         end
                     elseif facingChange(strandIndex, -1, squid) > 0 and facingChange(strandIndex, 1, squid) < 0 then
-                        if facingChange(strandIndex, -1, squid) == -1 and facingChange(strandIndex, 1, squid) == 1 then
+                        print("concave")
+                        if facingChange(strandIndex, -1, squid) == 1 and facingChange(strandIndex, 1, squid) == -1 then
                             for index, point in ipairs(strand.components) do
                                 if index <= #strand.components / 2 then
-                                    table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
-                                else
                                     table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                                else
+                                    table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
                                 end
                             end
                         elseif facingChange(strandIndex, -1, squid) == -1 then
@@ -336,7 +349,7 @@ function run()
                             end
                         end
                     elseif facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) > 0 then
-                    
+                        print("bevel")
                     end                
                 end
             end
@@ -346,6 +359,7 @@ function run()
     if #webCluster > 0 then
         for squidex, tendril in ipairs(webCluster) do
             generateAliasData(tendril)
+            print("other generation complete")
         end
     end
     
@@ -509,6 +523,7 @@ function run()
             elseif not aInside and pixel.percent > 0 then
                 sourceValue = sourceImage:getPixel(pixel.sourceX - cel.position.x, pixel.sourceY - cel.position.y)
                 underValue = sourceImage:getPixel(pixel.x - cel.position.x, pixel.y - cel.position.y)
+                print(string.format("U:(%d, %d), S:(%d, %d), %f P", pixel.x, pixel.y, pixel.sourceX, pixel.sourceY, pixel.percent))
                 image:drawPixel(pixel.x - cel.position.x, pixel.y - cel.position.y, mixColour(sourceValue, underValue, nil, pixel.percent))
             end
         end
