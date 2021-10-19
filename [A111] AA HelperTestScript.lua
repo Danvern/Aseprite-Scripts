@@ -7,7 +7,7 @@ if baseSelection.isEmpty then return end
 local aMax=50
 local aMin=0
 local aScale=1.0
-local aInside=true
+local aInside=false
 local aAutomate=true
 local aTransparency=true
 local aConcaveSpacing=2
@@ -216,8 +216,13 @@ function run()
             cornerIndex = #strand.components
             normalOffset = 2
         end
-        pixel.x = point.x
-        pixel.y = point.y
+        if aInside then
+            pixel.x = point.x
+            pixel.y = point.y
+        else
+            pixel.x = point.x + directionsX[strand.normalFacing]
+            pixel.y = point.y + directionsY[strand.normalFacing]
+        end
         pixel.sourceX = strand.components[cornerIndex].x
         pixel.sourceY = strand.components[cornerIndex].y
         pixel.compareX = strand.components[cornerIndex].x + directionsX[rotateFacing(strand.normalFacing, normalOffset)]
@@ -232,7 +237,13 @@ function run()
                 percent = 1.0 - clamp(1.0, (index - 1) / (#strand.components * aScale), 0.0)
             end
         else
-            percent = 1.0 - clamp(1.0, index / ((#strand.components) * aScale), 0.0)
+            if primaryVertexOffset > 0 then
+            -- print(index)
+            -- print(#strand.components)
+                percent = clamp(1.0, (index - 1) / (#strand.components * aScale), 0.0)
+            else
+                percent = 1.0 - clamp(1.0, index / (#strand.components * aScale), 0.0)
+            end
         end
         pixel.percent = percent
         -- print(string.format("Pixel %d / %d (%f) - Normal %d + %d", index, #strand.components, pixel.percent, strand.normalFacing, normalOffset))
@@ -264,37 +275,68 @@ function run()
     function generateAliasData(squid)
         for strandIndex, strand in ipairs(squid) do
             if strand.normalFacing % 2 == 1 then
-                if facingChange(strandIndex, -1, squid) == -1 and facingChange(strandIndex, 1, squid) < 0 then
-                    for index, point in ipairs(strand.components) do
-                        table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
-                    end
-                elseif facingChange(strandIndex, -1, squid) > 0 and facingChange(strandIndex, 1, squid) == 1 then
-                    for index, point in ipairs(strand.components) do
-                        table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
-                    end
-                elseif facingChange(strandIndex, -1, squid) > 0 and facingChange(strandIndex, 1, squid) < 0 then
-                
-                elseif facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) > 0 then
-                    if facingChange(strandIndex, -1, squid) == -1 and facingChange(strandIndex, 1, squid) == 1 then
-                        for index, point in ipairs(strand.components) do
-                            if index <= #strand.components / 2 then
-                                table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
-                            else
-                                table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
-                            end
-                        end
-                    elseif facingChange(strandIndex, -1, squid) == -1 then
+                if aInside then
+                    if facingChange(strandIndex, -1, squid) == -1 and facingChange(strandIndex, 1, squid) < 0 then
                         for index, point in ipairs(strand.components) do
                             table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
                         end
-                    elseif facingChange(strandIndex, 1, squid) == 1 then
+                    elseif facingChange(strandIndex, -1, squid) > 0 and facingChange(strandIndex, 1, squid) == 1 then
                         for index, point in ipairs(strand.components) do
                             table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
                         end
+                    elseif facingChange(strandIndex, -1, squid) > 0 and facingChange(strandIndex, 1, squid) < 0 then
+                    
+                    elseif facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) > 0 then
+                        if facingChange(strandIndex, -1, squid) == -1 and facingChange(strandIndex, 1, squid) == 1 then
+                            for index, point in ipairs(strand.components) do
+                                if index <= #strand.components / 2 then
+                                    table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                                else
+                                    table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                                end
+                            end
+                        elseif facingChange(strandIndex, -1, squid) == -1 then
+                            for index, point in ipairs(strand.components) do
+                                table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                            end
+                        elseif facingChange(strandIndex, 1, squid) == 1 then
+                            for index, point in ipairs(strand.components) do
+                                table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                            end
+                        end
                     end
+                else
+                    if facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) == -1 then
+                        for index, point in ipairs(strand.components) do
+                            table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                        end
+                    elseif facingChange(strandIndex, -1, squid) == 1 and facingChange(strandIndex, 1, squid) > 0 then
+                        for index, point in ipairs(strand.components) do
+                            table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                        end
+                    elseif facingChange(strandIndex, -1, squid) > 0 and facingChange(strandIndex, 1, squid) < 0 then
+                        if facingChange(strandIndex, -1, squid) == -1 and facingChange(strandIndex, 1, squid) == 1 then
+                            for index, point in ipairs(strand.components) do
+                                if index <= #strand.components / 2 then
+                                    table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                                else
+                                    table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                                end
+                            end
+                        elseif facingChange(strandIndex, -1, squid) == -1 then
+                            for index, point in ipairs(strand.components) do
+                                table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                            end
+                        elseif facingChange(strandIndex, 1, squid) == 1 then
+                            for index, point in ipairs(strand.components) do
+                                table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                            end
+                        end
+                    elseif facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) > 0 then
+                    
+                    end                
                 end
             end
-            
         end
     end
 
