@@ -217,18 +217,18 @@ function run()
         pixel.y = point.y
         pixel.sourceX = strand.components[cornerIndex].x
         pixel.sourceY = strand.components[cornerIndex].y
-        pixel.compareX = strand.components[cornerIndex].x - directionsX[rotateFacing(strand.normalFacing, normalOffset)]
-        pixel.compareY = strand.components[cornerIndex].y - directionsY[rotateFacing(strand.normalFacing, normalOffset)]
+        pixel.compareX = strand.components[cornerIndex].x + directionsX[rotateFacing(strand.normalFacing, normalOffset)]
+        pixel.compareY = strand.components[cornerIndex].y + directionsY[rotateFacing(strand.normalFacing, normalOffset)]
         percent = 0.0
         if aInside then
-            print(index)
-            print(#strand.components)
+            -- print(index)
+            -- print(#strand.components)
             percent = clamp(1.0, index / (#strand.components * aScale), 0.0)
         else
             percent = 1.0 - clamp(1.0, index / ((#strand.components) * aScale), 0.0)
         end
         pixel.percent = percent
-        print(pixel.percent)
+        print(string.format("Pixel %d / %d (%f) - Normal %d + %d", index, #strand.components, pixel.percent, strand.normalFacing, normalOffset))
         return pixel
     end
     
