@@ -240,7 +240,16 @@ function run()
             comparisonIndex = comparisonIndex % #web
         end
         comparisonIndex = comparisonIndex + 1
-        return web[comparisonIndex].normalFacing - web[strandIndex].normalFacing
+        difference = 0
+        clockDifference = web[comparisonIndex].normalFacing - web[strandIndex].normalFacing
+        counterDifference = web[comparisonIndex].normalFacing - 8 - web[strandIndex].normalFacing
+        if math.abs(clockDifference) < math.abs(counterDifference) then
+            difference = clockDifference
+        else
+            difference = counterDifference
+        end
+        print(string.format("Difference between strand normals %d and %d is (%d - %d = %d)", strandIndex, comparisonIndex, web[strandIndex].normalFacing, web[comparisonIndex].normalFacing, difference))
+        return difference
     end
     
     aliasPixels = {}
