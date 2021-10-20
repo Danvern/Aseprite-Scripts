@@ -300,12 +300,12 @@ function cutCorners()
             end
         else
             if primaryVertexOffset > 0 then
-                if aMin <= thresholdPercent and thresholdPercent <= aMax or true then
+                if aMin <= 1.0 - thresholdPercent and 1.0 - thresholdPercent <= aMax then
                     percent = clamp(1.0, (index - 1 - (#strand.components * (1.0 - aScale * scale)))
                     / (#strand.components * aScale * scale), 0.0)
                 end
             else
-                if aMin <= 1.0 - thresholdPercent and 1.0 - thresholdPercent <= aMax or true then
+                if aMin <= thresholdPercent and thresholdPercent <= aMax then
                     percent = 1.0 - clamp(1.0, (index / #strand.components) / (aScale * scale), 0.0)
                 end
             end
