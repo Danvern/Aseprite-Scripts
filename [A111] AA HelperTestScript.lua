@@ -569,7 +569,8 @@ function cutCorners()
             if aInside and pixel.percent < 1 then
                 local sourceValue = sourceImage:getPixel(pixel.x - cel.position.x, pixel.y - cel.position.y)
                 local inletValue = sourceImage:getPixel(pixel.compareX - cel.position.x, pixel.compareY - cel.position.y)
-                if aAverageInsideColor then
+                if aAverageInsideColor and 0 <= pixel.normalX - cel.position.x and pixel.normalX - cel.position.x < spr.width
+                and 0 <= pixel.normalY - cel.position.y and pixel.normalY - cel.position.y < spr.height then
                     local normalValue = sourceImage:getPixel(pixel.normalX - cel.position.x, pixel.normalY - cel.position.y)
                     local cornerValue = sourceImage:getPixel(pixel.sourceX - cel.position.x, pixel.sourceY - cel.position.y)
                     if aAverageInsideColorFormula == "linear" then
@@ -585,9 +586,9 @@ function cutCorners()
                         inletValue = mixColour(normalValue, inletValue, nil, 0.5)
                     end
                 end
-                if pixel.x - cel.position.x == 169 then
-                    print(string.format("S:(%d, %d), C:(%d, %d), %f P", pixel.x, pixel.y, pixel.compareX, pixel.compareY, pixel.percent))
-                end
+                -- if pixel.x - cel.position.x == 169 then
+                    -- print(string.format("S:(%d, %d), C:(%d, %d), %f P", pixel.x, pixel.y, pixel.compareX, pixel.compareY, pixel.percent))
+                -- end
                 image:drawPixel(pixel.x - cel.position.x, pixel.y - cel.position.y, mixColour(sourceValue, inletValue, nil, pixel.percent))
             elseif not aInside and pixel.percent > 0 then
                 local sourceValue = sourceImage:getPixel(pixel.sourceX - cel.position.x, pixel.sourceY - cel.position.y)
