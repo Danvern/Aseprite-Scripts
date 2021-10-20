@@ -12,6 +12,9 @@ local aAutomate=true
 local aTransparency=true
 local aConcaveSpacing=2
 local aConcaveScale=1.0
+local aAverageInsideColor=true
+-- "constant", "linear", "corner bias"
+local aAverageInsideColorFormula="normal bias"
 
 function run()
     function getAdjacent(x, y)
@@ -205,7 +208,7 @@ function run()
     end
     
     -- general purpose calculation
-    function calculatePixel(point, strand, index, primaryVertexOffset)
+    function calculatePixel(point, strand, index, primaryVertexOffset, scale)
         pixel = {}
         cornerIndex = 1
         normalOffset = 2
@@ -216,12 +219,14 @@ function run()
             cornerIndex = #strand.components
             normalOffset = 2
         end
+        pixel.normalX = point.x + directionsX[strand.normalFacing]
+        pixel.normalY = point.y + directionsY[strand.normalFacing]
         if aInside then
             pixel.x = point.x
             pixel.y = point.y
         else
-            pixel.x = point.x + directionsX[strand.normalFacing]
-            pixel.y = point.y + directionsY[strand.normalFacing]
+            pixel.x = pixel.normalX
+            pixel.y = pixel.normalY
         end
         pixel.sourceX = strand.components[cornerIndex].x
         pixel.sourceY = strand.components[cornerIndex].y
@@ -232,9 +237,9 @@ function run()
             if primaryVertexOffset > 0 then
             -- print(index)
             -- print(#strand.components)
-                percent = clamp(1.0, index / (#strand.components * aScale), 0.0)
+                percent = clamp(1.0, index / (#strand.components * aScale * scale), 0.0)
             else
-                percent = 1.0 - clamp(1.0, (index - 1) / (#strand.components * aScale), 0.0)
+                percent = clamp(1.0, (1.0 - (index - 1) / #strand.components) / (aScale * scale), 0.0)
             end
         else
             if primaryVertexOffset > 0 then
@@ -246,6 +251,8 @@ function run()
             end
         end
         pixel.percent = percent
+        pixel.max = math.ceil(#strand.components * aScale * scale)
+        pixel.place = math.ceil(percent * pixel.max)
         print(string.format("(%d, %d) Pixel %d / %d (%f) - Normal %d + %d - Spin %d", pixel.x, pixel.y, index, #strand.components, pixel.percent, strand.normalFacing, normalOffset, strand.spin))
         return pixel
     end
@@ -311,7 +318,7 @@ function run()
                             else
                                 print("-gentle slope down behind")
                                 for index, point in ipairs(strand.components) do
-                                    table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                                    table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1))
                                 end
                             end
                         end
@@ -323,7 +330,7 @@ function run()
                             else
                                 print("-gentle slope down ahead (no rounded corner)")
                                 for index, point in ipairs(strand.components) do
-                                    table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                                    table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1))
                                 end
                             end
                         end
@@ -337,29 +344,29 @@ function run()
                                 print("-gentle convex")
                                 for index, point in ipairs(strand.components) do
                                     if index <= #strand.components / 2 then
-                                        table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                                        table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 0.5))
                                     else
-                                        table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                                        table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 0.5))
                                     end
                                 end
                             elseif (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2) then
                                 print("-gentle convex slope behind")
                                 for index, point in ipairs(strand.components) do
-                                    table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                                    table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1))
                                 end
                             elseif (facingChange(strandIndex, 2, squid) == 0 or strandSize(strandIndex, 1, squid) > 2) then
                                 print("-gentle convex slope ahead")
                                 for index, point in ipairs(strand.components) do
-                                    table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                                    table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1))
                                 end
                             end
                         elseif facingChange(strandIndex, -1, squid) == -1 then
                             for index, point in ipairs(strand.components) do
-                                -- table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                                -- table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1))
                             end
                         elseif facingChange(strandIndex, 1, squid) == 1 then
                             for index, point in ipairs(strand.components) do
-                                -- table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                                -- table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1))
                             end
                         end
                     end
@@ -369,7 +376,7 @@ function run()
                         if (facingChange(strandIndex, 2, squid) == 0 or strandSize(strandIndex, 1, squid) > 2) then
                             print("-gentle slope up ahead")
                             for index, point in ipairs(strand.components) do
-                                table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                                table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1))
                             end
                         end
                     elseif facingChange(strandIndex, -1, squid) == 1 and facingChange(strandIndex, 1, squid) > 0 then
@@ -377,7 +384,7 @@ function run()
                         if (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2) then
                             print("-gentle slope up behind")
                             for index, point in ipairs(strand.components) do
-                                table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                                table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1))
                             end
                         end
                     elseif facingChange(strandIndex, -1, squid) > 0 and facingChange(strandIndex, 1, squid) < 0 then
@@ -389,29 +396,29 @@ function run()
                                 print("-gentle concave")
                                 for index, point in ipairs(strand.components) do
                                     if index <= #strand.components / 2 then
-                                        table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                                        table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 0.5))
                                     else
-                                        table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                                        table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 0.5))
                                     end
                                 end
                             elseif (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2) then
                                 print("-gentle concave slope behind")
                                 for index, point in ipairs(strand.components) do
-                                    table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                                    table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1))
                                 end
                             elseif (facingChange(strandIndex, 2, squid) == 0 or strandSize(strandIndex, 1, squid) > 2) then
                                 print("-gentle concave slope ahead")
                                 for index, point in ipairs(strand.components) do
-                                    table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                                    table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1))
                                 end
                             end
                         elseif facingChange(strandIndex, -1, squid) == -1 then
                             for index, point in ipairs(strand.components) do
-                                -- table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                                -- table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1))
                             end
                         elseif facingChange(strandIndex, 1, squid) == 1 then
                             for index, point in ipairs(strand.components) do
-                                -- table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                                -- table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1))
                             end
                         end
                     elseif facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) > 0 then
@@ -506,51 +513,7 @@ function run()
         local cel = app.activeImage.cel
         local pc = app.pixelColor
         
-        -- for index, strand in ipairs(borderWeb) do
-            -- for index, coord in ipairs(strand[1]) do
-                -- --print(table.concat(coord, " "))
-                -- --print(cel.position)
-                -- --print(cel.position.x)
-                -- --print(image)
-                -- function mixClean(c1, c2, source, colorFunction, percent)
-                    -- if source ~= nil then
-                        -- if source == c1 then c1 = c2
-                        -- elseif source == c2 then c2 = c1
-                        -- end
-                    -- end
-                    -- return colorFunction(c1) * percent + colorFunction(c2) * (1 - percent)
-                -- end
-                -- function mixColour(c1, c2, mask, percent)
-                    -- rVal = mixClean(c1, c2, mask, pc.rgbaR, percent)
-                    -- gVal = mixClean(c1, c2, mask, pc.rgbaG, percent)
-                    -- bVal = mixClean(c1, c2, mask, pc.rgbaB, percent)
-                    -- return pc.rgba(rVal, gVal, bVal)
-                -- end
-
-                -- if aInside and coord[7] < 1 then
-                    -- sourceValue = sourceImage:getPixel(coord[1] - cel.position.x, coord[2] - cel.position.y)
-                    -- --inletX = coord[3] - clamp(-1, coord[1] - coord[3], 1)
-                    -- --inletY = coord[4] - clamp(-1, coord[2] - coord[4], 1)
-                    -- inletX = coord[3] - strand[2]
-                    -- inletY = coord[4] - strand[3]
-                    -- inletValue = sourceImage:getPixel(inletX - cel.position.x, inletY - cel.position.y)
-                    -- --pAdjacent = image:getPixel(coord[1] + coord[5] - cel.position.x, coord[2] + coord[6] - cel.position.y)
-                    -- --nAdjacent = image:getPixel(coord[1] - coord[5] - cel.position.x, coord[2] - coord[6] - cel.position.y)
-                    -- --targetValue = mixColour(pAdjacent, nAdjacent, sourceValue, 0.5)
-                    -- image:drawPixel(coord[1] - cel.position.x, coord[2] - cel.position.y, mixColour(sourceValue, inletValue, nil, coord[7]))
-                -- elseif not aInside and coord[7] > 0 then
-                    -- sourceValue = sourceImage:getPixel(coord[3] - cel.position.x, coord[4] - cel.position.y)
-                    -- underValue = sourceImage:getPixel(coord[1] - cel.position.x, coord[2] - cel.position.y)
-                    -- image:drawPixel(coord[1] - cel.position.x, coord[2] - cel.position.y, mixColour(sourceValue, underValue, nil, coord[7]))
-                -- end
-            -- end
-        -- end
-        
         for index, pixel in ipairs(aliasPixels) do
-            --print(table.concat(coord, " "))
-            --print(cel.position)
-            --print(cel.position.x)
-            --print(image)
             function mixClean(c1, c2, source, colorFunction, percent)
                 if source ~= nil then
                     if source == c1 then c1 = c2
@@ -579,12 +542,26 @@ function run()
                 return pc.rgba(rVal, gVal, bVal, aVal)
             end
 
-            -- print("test")
             if aInside and pixel.percent < 1 then
                 sourceValue = sourceImage:getPixel(pixel.x - cel.position.x, pixel.y - cel.position.y)
                 inletValue = sourceImage:getPixel(pixel.compareX - cel.position.x, pixel.compareY - cel.position.y)
+                if aAverageInsideColor then
+                    normalValue = sourceImage:getPixel(pixel.normalX - cel.position.x, pixel.normalY - cel.position.y)
+                    cornerValue = sourceImage:getPixel(pixel.sourceX - cel.position.x, pixel.sourceY - cel.position.y)
+                    if aAverageInsideColorFormula == "linear" then
+                        inletValue = mixColour(normalValue, inletValue, nil, pixel.percent)
+                    elseif aAverageInsideColorFormula == "normal bias" then
+                        print(string.format("Normal Bias: (%d/%d)", pixel.place, pixel.max))
+                        if pixel.place == 1 then
+                            inletValue = mixColour(normalValue, inletValue, nil, 0.0)
+                        else
+                            inletValue = mixColour(normalValue, inletValue, nil, 1.0)
+                        end
+                    else
+                        inletValue = mixColour(normalValue, inletValue, nil, 0.5)
+                    end
+                end
                 -- print(string.format("S:(%d, %d), C:(%d, %d), %f P", pixel.x, pixel.y, pixel.compareX, pixel.compareY, pixel.percent))
-                -- print(inletValue)
                 image:drawPixel(pixel.x - cel.position.x, pixel.y - cel.position.y, mixColour(sourceValue, inletValue, nil, pixel.percent))
             elseif not aInside and pixel.percent > 0 then
                 sourceValue = sourceImage:getPixel(pixel.sourceX - cel.position.x, pixel.sourceY - cel.position.y)
