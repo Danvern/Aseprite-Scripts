@@ -7,7 +7,7 @@ if baseSelection.isEmpty then return end
 local aMax=50
 local aMin=0
 local aScale=1.0
-local aInside=false
+local aInside=true
 local aAutomate=true
 local aTransparency=true
 local aConcaveSpacing=2
@@ -303,13 +303,29 @@ function run()
         for strandIndex, strand in ipairs(squid) do
             if strand.normalFacing % 2 == 1 then
                 if aInside then
-                    if facingChange(strandIndex, -1, squid) == -1 and facingChange(strandIndex, 1, squid) < 0 then
-                        for index, point in ipairs(strand.components) do
-                            table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                    if facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) == -1 then
+                        print("slope up ahead")
+                        if (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2) then
+                            if(facingChange(strandIndex, -1, squid) == -2) then
+                                print("-tried to round the corner")
+                            else
+                                print("-gentle slope down behind")
+                                for index, point in ipairs(strand.components) do
+                                    table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                                end
+                            end
                         end
-                    elseif facingChange(strandIndex, -1, squid) > 0 and facingChange(strandIndex, 1, squid) == 1 then
-                        for index, point in ipairs(strand.components) do
-                            table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                    elseif facingChange(strandIndex, -1, squid) == 1 and facingChange(strandIndex, 1, squid) > 0 then
+                        print("slope up behind")
+                        if (facingChange(strandIndex, 2, squid) == 0 or strandSize(strandIndex, 1, squid) > 2) then
+                            if(facingChange(strandIndex, 1, squid) == 2) then
+                                print("-tried to round the corner")
+                            else
+                                print("-gentle slope down ahead (no rounded corner)")
+                                for index, point in ipairs(strand.components) do
+                                    table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                                end
+                            end
                         end
                     elseif facingChange(strandIndex, -1, squid) > 0 and facingChange(strandIndex, 1, squid) < 0 then
                     
@@ -334,17 +350,17 @@ function run()
                     end
                 else
                     if facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) == -1 then
-                        print("slope ahead")
+                        print("slope up ahead")
                         if (facingChange(strandIndex, 2, squid) == 0 or strandSize(strandIndex, 1, squid) > 2) then
-                            print("-gentle slope ahead")
+                            print("-gentle slope up ahead")
                             for index, point in ipairs(strand.components) do
                                 table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
                             end
                         end
                     elseif facingChange(strandIndex, -1, squid) == 1 and facingChange(strandIndex, 1, squid) > 0 then
-                        print("slope behind")
+                        print("slope up behind")
                         if (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2) then
-                            print("-gentle slope behind")
+                            print("-gentle slope up behind")
                             for index, point in ipairs(strand.components) do
                                 table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
                             end
