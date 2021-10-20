@@ -330,21 +330,36 @@ function run()
                     elseif facingChange(strandIndex, -1, squid) > 0 and facingChange(strandIndex, 1, squid) < 0 then
                     
                     elseif facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) > 0 then
+                        print("convex")
                         if facingChange(strandIndex, -1, squid) == -1 and facingChange(strandIndex, 1, squid) == 1 then
-                            for index, point in ipairs(strand.components) do
-                                if index <= #strand.components / 2 then
-                                    table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
-                                else
+                            if (facingChange(strandIndex, -2, squid) % 2 == 0 or strandSize(strandIndex, -1, squid) > 2)
+                            and (facingChange(strandIndex, 2, squid) % 2 == 0 or strandSize(strandIndex, 1, squid) > 2) then
+                                print("-gentle convex")
+                                for index, point in ipairs(strand.components) do
+                                    if index <= #strand.components / 2 then
+                                        table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                                    else
+                                        table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                                    end
+                                end
+                            elseif (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2) then
+                                print("-gentle convex slope behind")
+                                for index, point in ipairs(strand.components) do
                                     table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                                end
+                            elseif (facingChange(strandIndex, 2, squid) == 0 or strandSize(strandIndex, 1, squid) > 2) then
+                                print("-gentle convex slope ahead")
+                                for index, point in ipairs(strand.components) do
+                                    table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
                                 end
                             end
                         elseif facingChange(strandIndex, -1, squid) == -1 then
                             for index, point in ipairs(strand.components) do
-                                table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                                -- table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
                             end
                         elseif facingChange(strandIndex, 1, squid) == 1 then
                             for index, point in ipairs(strand.components) do
-                                table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                                -- table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
                             end
                         end
                     end
@@ -400,7 +415,7 @@ function run()
                             end
                         end
                     elseif facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) > 0 then
-                        print("bevel")
+                        print("convex")
                     end                
                 end
             end
