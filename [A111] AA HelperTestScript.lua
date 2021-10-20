@@ -62,13 +62,13 @@ function cutCornersDialogue()
             id=string,
             text="Colour Application Settings:"
         }
-        :radio{
+        :check{
             id="aliasTransparency",
             text="Allow blending transparent colours.",
             selected=aTransparency
         }
         :newrow()
-        :radio{
+        :check{
             id="aliasAverageInsideColor",
             text="Contextually pick colors from surface normals to increase accuracy.",
             selected=aAverageInsideColor
@@ -314,8 +314,8 @@ function cutCorners()
         end
         pixel.sourceX = strand.components[cornerIndex].x
         pixel.sourceY = strand.components[cornerIndex].y
-        pixel.compareX = strand.components[cornerIndex].x + directionsX[rotateFacing(strand.normalFacing, normalOffset)]
-        pixel.compareY = strand.components[cornerIndex].y + directionsY[rotateFacing(strand.normalFacing, normalOffset)]
+        pixel.compareX = strand.components[cornerIndex].x + directionsX[rotateFacing(strand.normalFacing, normalOffset * strand.spin)]
+        pixel.compareY = strand.components[cornerIndex].y + directionsY[rotateFacing(strand.normalFacing, normalOffset * strand.spin)]
         local thresholdPercent = index / #strand.components
         local percent = 0.0
         if aInside then
@@ -585,7 +585,9 @@ function cutCorners()
                         inletValue = mixColour(normalValue, inletValue, nil, 0.5)
                     end
                 end
-                -- print(string.format("S:(%d, %d), C:(%d, %d), %f P", pixel.x, pixel.y, pixel.compareX, pixel.compareY, pixel.percent))
+                if pixel.x - cel.position.x == 169 then
+                    print(string.format("S:(%d, %d), C:(%d, %d), %f P", pixel.x, pixel.y, pixel.compareX, pixel.compareY, pixel.percent))
+                end
                 image:drawPixel(pixel.x - cel.position.x, pixel.y - cel.position.y, mixColour(sourceValue, inletValue, nil, pixel.percent))
             elseif not aInside and pixel.percent > 0 then
                 local sourceValue = sourceImage:getPixel(pixel.sourceX - cel.position.x, pixel.sourceY - cel.position.y)
