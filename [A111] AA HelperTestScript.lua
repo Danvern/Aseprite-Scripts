@@ -13,41 +13,71 @@ aTransparency=true
 aConcaveSpacing=2
 aConcaveScale=1.0
 aAverageInsideColor=true
--- "constant", "linear", "corner bias"
+-- "constant", "linear", "normal bias"
 aAverageInsideColorFormula="normal bias"
 
 function cutCornersDialogue()
     local info = Dialog()
         info:label{ 
             id=string,
-            label="-------- AA Assist Control Panel --------",
+            label="\"Cutting Corners\" AA Assistant v0.4.1",
             text="Set percentages and other values to control the selection area."
         }
-        info:slider{
+        :slider{
             id="aliasMax",
-            label="Max Threshold",
+            label="Maximum Range",
             min=0,
             max=100,
             value=aMax*100
         }
-        info:slider{
+        :slider{
             id="aliasMin",
-            label="Min Threshold",
+            label="Minimum Range",
             min=0,
             max=100,
             value=aMin*100
         }
-        info:check{
+        :check{
             id="aliasInside", 
-            label="AA Inside Selection", 
-            text="Anti-alias inside of the selection versus outside of it.", 
+            text="Anti-alias / select inside of the selection versus outside of it.", 
             selected=aInside
         }
-        info:check{
+        :separator{ 
+            id=string,
+            text="Automatic Algorithm Settings:"
+        }
+        :check{
             id="aliasAutomatic",
-            label="AA Automatically", 
             text="Automatically apply colors instead of stenciling the selection.", 
             selected=aAutomate
+        }
+        :slider{
+            id="aliasScale",
+            label="Range Scaling",
+            min=0,
+            max=100,
+            value=aScale*100
+        }
+        :label{ 
+            id=string,
+            text="Colour Application Settings:"
+        }
+        :radio{
+            id="aliasTransparency",
+            text="Allow blending transparent colours.",
+            selected=aTransparency
+        }
+        :newrow()
+        :radio{
+            id="aliasAverageInsideColor",
+            text="Contextually pick colors from surface normals to increase accuracy.",
+            selected=aAverageInsideColor
+        }
+        :combobox{
+            id="aliasAverageInsideColorFormula",
+            label="Color Blending Formula",
+            option=aAverageInsideColorFormula,
+            options={"constant", "linear", "normal bias"}
         }
         info:button{
             id="resetSettings",
@@ -66,9 +96,12 @@ function cutCornersDialogue()
         
     aMax=info.data.aliasMax/100
     aMin=info.data.aliasMin/100
-    aScale=1.0
     aInside=info.data.aliasInside
     aAutomate=info.data.aliasAutomatic
+    aScale=info.data.aliasScale/100
+    aTransparency=info.data.aliasTransparency
+    aAverageInsideColor=info.data.aliasAverageInsideColor
+    aAverageInsideColorFormula=info.data.aliasAverageInsideColorFormula
     return info.data.ok
 end
         
