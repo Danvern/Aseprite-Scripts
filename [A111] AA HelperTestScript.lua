@@ -2,12 +2,12 @@ local spr = app.activeSprite
 if not spr then return end
 
 local baseSelection = spr.selection
-if baseSelection.isEmpty then return end
+if baseSelection.isEmpty then print("Please select a region to anti-alias around (use the magic wand for best results)") return end
 
-aMax=50
-aMin=0
+aMax=0.5
+aMin=0.0
 aScale=1.0
-aInside=true
+aInside=false
 aAutomate=true
 aTransparency=true
 aConcaveSpacing=2
@@ -17,12 +17,6 @@ aAverageInsideColor=true
 aAverageInsideColorFormula="normal bias"
 
 function cutCornersDialogue()
-    local spr = app.activeSprite
-    if not spr then return end
-
-    local baseSelection = spr.selection
-    if baseSelection.isEmpty then return end
-
     local info = Dialog()
         info:label{ 
             id=string,
@@ -34,14 +28,14 @@ function cutCornersDialogue()
             label="Max Threshold",
             min=0,
             max=100,
-            value=aMax
+            value=aMax*100
         }
         info:slider{
             id="aliasMin",
             label="Min Threshold",
             min=0,
             max=100,
-            value=aMin
+            value=aMin*100
         }
         info:check{
             id="aliasInside", 
@@ -59,19 +53,19 @@ function cutCornersDialogue()
             id="resetSettings",
             text="Reset Settings", 
             onclick=function()
-                info.data.aliasMax=50
-                info.data.aliasMin=0
+                info.data.aliasMax=0.5
+                info.data.aliasMin=0.0
                 info.data.aliasInside=false
                 info.data.aliasAutomatic=false
                 print("(WIP) Settings Have Been Reset")
             end
         }
-        info:button{id="cancel",text="Cancel"}
-        info:button{id="ok",text="OK"}
+        info:button{id="cancel", text="Cancel"}
+        info:button{id="ok", text="OK", focus=true}
         info:show()
         
-    aMax=info.data.aliasMax
-    aMin=info.data.aliasMin
+    aMax=info.data.aliasMax/100
+    aMin=info.data.aliasMin/100
     aScale=1.0
     aInside=info.data.aliasInside
     aAutomate=info.data.aliasAutomatic
@@ -143,7 +137,7 @@ function cutCorners()
         local driver = {coord[1], coord[2]}
         local borderWeb = {}
         
-        -- compared two coordinates for equivalency
+        -- compared two coordinates for equivalence
         function sameCoord(coordinate, coordinate2)
             return coordinate[1] == coordinate2[1] and coordinate[2] == coordinate2[2]
         end
@@ -259,7 +253,7 @@ function cutCorners()
                 table.insert(webCluster, borderWeb)
                 -- print(string.format("completed border web %d of %d / %d strands", #webCluster, #borderWeb, #corners * 2))
             else
-                print("border web was a dead end")
+                -- print("border web was a dead end")
             end
         end
     end
@@ -289,28 +283,37 @@ function cutCorners()
         pixel.sourceY = strand.components[cornerIndex].y
         pixel.compareX = strand.components[cornerIndex].x + directionsX[rotateFacing(strand.normalFacing, normalOffset)]
         pixel.compareY = strand.components[cornerIndex].y + directionsY[rotateFacing(strand.normalFacing, normalOffset)]
+        local thresholdPercent = index / #strand.components
         local percent = 0.0
         if aInside then
+            percent = 1.0
             if primaryVertexOffset > 0 then
             -- print(index)
             -- print(#strand.components)
-                percent = clamp(1.0, index / (#strand.components * aScale * scale), 0.0)
+                if aMin <= thresholdPercent and thresholdPercent <= aMax then
+                    percent = clamp(1.0, index / (#strand.components * aScale * scale), 0.0)
+                end
             else
-                percent = clamp(1.0, (1.0 - (index - 1) / #strand.components) / (aScale * scale), 0.0)
+                if aMin <= 1.0 - thresholdPercent and 1.0 - thresholdPercent <= aMax then
+                    percent = clamp(1.0, (1.0 - (index - 1) / #strand.components) / (aScale * scale), 0.0)
+                end
             end
         else
             if primaryVertexOffset > 0 then
-            -- print(index)
-            -- print(#strand.components)
-                percent = clamp(1.0, (index - 1) / (#strand.components * aScale * scale), 0.0)
+                if aMin <= thresholdPercent and thresholdPercent <= aMax or true then
+                    percent = clamp(1.0, (index - 1 - (#strand.components * (1.0 - aScale * scale)))
+                    / (#strand.components * aScale * scale), 0.0)
+                end
             else
-                percent = clamp(1.0, (1.0 - index / #strand.components) / (aScale * scale), 0.0)
+                if aMin <= 1.0 - thresholdPercent and 1.0 - thresholdPercent <= aMax or true then
+                    percent = 1.0 - clamp(1.0, (index / #strand.components) / (aScale * scale), 0.0)
+                end
             end
         end
         pixel.percent = percent
         pixel.max = math.ceil(#strand.components * aScale * scale)
         pixel.place = math.ceil(percent * pixel.max)
-        print(string.format("(%d, %d) Pixel %d / %d (%f) - Normal %d + %d - Spin %d", pixel.x, pixel.y, index, #strand.components, pixel.percent, strand.normalFacing, normalOffset, strand.spin))
+        -- print(string.format("(%d, %d) Pixel %d / %d (%f) - Normal %d + %d - Spin %d", pixel.x, pixel.y, index, #strand.components, pixel.percent, strand.normalFacing, normalOffset, strand.spin))
         return pixel
     end
     
@@ -368,24 +371,24 @@ function cutCorners()
             if strand.normalFacing % 2 == 1 then
                 if aInside then
                     if facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) == -1 then
-                        print("slope up ahead")
+                        -- print("slope up ahead")
                         if (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2) then
                             if(facingChange(strandIndex, -1, squid) == -2) then
-                                print("-tried to round the corner")
+                                -- print("-tried to round the corner")
                             else
-                                print("-gentle slope down behind")
+                                -- print("-gentle slope down behind")
                                 for index, point in ipairs(strand.components) do
                                     table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1))
                                 end
                             end
                         end
                     elseif facingChange(strandIndex, -1, squid) == 1 and facingChange(strandIndex, 1, squid) > 0 then
-                        print("slope up behind")
+                        -- print("slope up behind")
                         if (facingChange(strandIndex, 2, squid) == 0 or strandSize(strandIndex, 1, squid) > 2) then
                             if(facingChange(strandIndex, 1, squid) == 2) then
-                                print("-tried to round the corner")
+                                -- print("-tried to round the corner")
                             else
-                                print("-gentle slope down ahead (no rounded corner)")
+                                -- print("-gentle slope down ahead (no rounded corner)")
                                 for index, point in ipairs(strand.components) do
                                     table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1))
                                 end
@@ -394,11 +397,11 @@ function cutCorners()
                     elseif facingChange(strandIndex, -1, squid) > 0 and facingChange(strandIndex, 1, squid) < 0 then
                     
                     elseif facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) > 0 then
-                        print("convex")
+                        -- print("convex")
                         if facingChange(strandIndex, -1, squid) == -1 and facingChange(strandIndex, 1, squid) == 1 then
                             if (facingChange(strandIndex, -2, squid) % 2 == 0 or strandSize(strandIndex, -1, squid) > 2)
                             and (facingChange(strandIndex, 2, squid) % 2 == 0 or strandSize(strandIndex, 1, squid) > 2) then
-                                print("-gentle convex")
+                                -- print("-gentle convex")
                                 for index, point in ipairs(strand.components) do
                                     if index <= #strand.components / 2 then
                                         table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 0.5))
@@ -407,12 +410,12 @@ function cutCorners()
                                     end
                                 end
                             elseif (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2) then
-                                print("-gentle convex slope behind")
+                                -- print("-gentle convex slope behind")
                                 for index, point in ipairs(strand.components) do
                                     table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1))
                                 end
                             elseif (facingChange(strandIndex, 2, squid) == 0 or strandSize(strandIndex, 1, squid) > 2) then
-                                print("-gentle convex slope ahead")
+                                -- print("-gentle convex slope ahead")
                                 for index, point in ipairs(strand.components) do
                                     table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1))
                                 end
@@ -429,28 +432,28 @@ function cutCorners()
                     end
                 else
                     if facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) == -1 then
-                        print("slope up ahead")
+                        -- print("slope up ahead")
                         if (facingChange(strandIndex, 2, squid) == 0 or strandSize(strandIndex, 1, squid) > 2) then
-                            print("-gentle slope up ahead")
+                            -- print("-gentle slope up ahead")
                             for index, point in ipairs(strand.components) do
                                 table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1))
                             end
                         end
                     elseif facingChange(strandIndex, -1, squid) == 1 and facingChange(strandIndex, 1, squid) > 0 then
-                        print("slope up behind")
+                        -- print("slope up behind")
                         if (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2) then
-                            print("-gentle slope up behind")
+                            -- print("-gentle slope up behind")
                             for index, point in ipairs(strand.components) do
                                 table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1))
                             end
                         end
                     elseif facingChange(strandIndex, -1, squid) > 0 and facingChange(strandIndex, 1, squid) < 0 then
-                        print("concave")
+                        -- print("concave")
                         if facingChange(strandIndex, -1, squid) == 1 and facingChange(strandIndex, 1, squid) == -1 then
                             -- print("test")
                             if (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2)
                             and (facingChange(strandIndex, 2, squid) == 0 or strandSize(strandIndex, 1, squid) > 2) then
-                                print("-gentle concave")
+                                -- print("-gentle concave")
                                 for index, point in ipairs(strand.components) do
                                     if index <= #strand.components / 2 then
                                         table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 0.5))
@@ -459,12 +462,12 @@ function cutCorners()
                                     end
                                 end
                             elseif (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2) then
-                                print("-gentle concave slope behind")
+                                -- print("-gentle concave slope behind")
                                 for index, point in ipairs(strand.components) do
                                     table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1))
                                 end
                             elseif (facingChange(strandIndex, 2, squid) == 0 or strandSize(strandIndex, 1, squid) > 2) then
-                                print("-gentle concave slope ahead")
+                                -- print("-gentle concave slope ahead")
                                 for index, point in ipairs(strand.components) do
                                     table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1))
                                 end
@@ -479,7 +482,7 @@ function cutCorners()
                             end
                         end
                     elseif facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) > 0 then
-                        print("convex")
+                        -- print("convex")
                     end                
                 end
             end
@@ -489,7 +492,7 @@ function cutCorners()
     if #webCluster > 0 then
         for squidex, tendril in ipairs(webCluster) do
             generateAliasData(tendril)
-            print("other generation complete")
+            -- print("border pixel data generation complete")
         end
     end
 
@@ -539,7 +542,7 @@ function cutCorners()
                     if aAverageInsideColorFormula == "linear" then
                         inletValue = mixColour(normalValue, inletValue, nil, pixel.percent)
                     elseif aAverageInsideColorFormula == "normal bias" then
-                        print(string.format("Normal Bias: (%d/%d)", pixel.place, pixel.max))
+                        -- print(string.format("Normal Bias: (%d/%d)", pixel.place, pixel.max))
                         if pixel.place == 1 then
                             inletValue = mixColour(normalValue, inletValue, nil, 0.0)
                         else
@@ -570,7 +573,7 @@ function cutCorners()
         end
         spr.selection = newSelection
     else
-        print("invalid selection. there's no smoothing out the hard life of an orphan.")
+        print("Invalid selection. There's no smoothing out the hard life of an orphan.")
     end
 end
 
