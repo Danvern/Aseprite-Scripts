@@ -237,7 +237,7 @@ function run()
                 percent = 1.0 - clamp(1.0, (index - 1) / (#strand.components * aScale), 0.0)
             end
         else
-            if primaryVertexOffset > 0 or (strand.spin < 0 and primaryVertexOffset < 0) then
+            if primaryVertexOffset > 0 then
             -- print(index)
             -- print(#strand.components)
                 percent = clamp(1.0, (index - 1) / (#strand.components * aScale), 0.0)
@@ -246,8 +246,23 @@ function run()
             end
         end
         pixel.percent = percent
-        print(string.format("(%d, %d) Pixel %d / %d (%f) - Normal %d + %d", pixel.x, pixel.y, index, #strand.components, pixel.percent, strand.normalFacing, normalOffset))
+        print(string.format("(%d, %d) Pixel %d / %d (%f) - Normal %d + %d - Spin %d", pixel.x, pixel.y, index, #strand.components, pixel.percent, strand.normalFacing, normalOffset, strand.spin))
         return pixel
+    end
+    
+    function strandSize(strandIndex, offset, web)
+        comparisonIndex = strandIndex - 1 + offset
+        if comparisonIndex < 0 then
+            comparisonIndex = comparisonIndex % -#web + #web
+        else
+            comparisonIndex = comparisonIndex % #web
+        end
+        if comparisonIndex > #web then
+            return 0
+        end
+        comparisonIndex = comparisonIndex + 1
+        -- print(comparisonIndex.."/"..#web)
+        return #web[comparisonIndex].components
     end
     
     function facingChange(strandIndex, offset, web)
@@ -258,6 +273,9 @@ function run()
             comparisonIndex = comparisonIndex % #web
         end
         comparisonIndex = comparisonIndex + 1
+        if comparisonIndex > #web then
+            return 0
+        end
         difference = 0
         clockDifference = web[comparisonIndex].normalFacing - web[strandIndex].normalFacing
         counterDifference = math.max(clockDifference - 8, -clockDifference - 8)
@@ -276,7 +294,7 @@ function run()
             difference = 4
         end
         -- print(string.format("Difference between strand normals %d and %d is (%d - %d = %d)", strandIndex, comparisonIndex, web[strandIndex].normalFacing, web[comparisonIndex].normalFacing, difference))
-        return difference
+        return difference * web[strandIndex].spin
     end
     
     aliasPixels = {}
@@ -316,15 +334,17 @@ function run()
                     end
                 else
                     if facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) == -1 then
-                        print("gentle slope")
-                        if facingChange(strandIndex, -1, squid) > -4 then
+                        print("slope ahead")
+                        if (facingChange(strandIndex, 2, squid) == 0 or strandSize(strandIndex, 1, squid) > 2) then
+                            print("-gentle slope ahead")
                             for index, point in ipairs(strand.components) do
                                 table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
                             end
                         end
                     elseif facingChange(strandIndex, -1, squid) == 1 and facingChange(strandIndex, 1, squid) > 0 then
-                        print("gentle slope")
-                        if facingChange(strandIndex, 1, squid) < 4 then
+                        print("slope behind")
+                        if (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2) then
+                            print("-gentle slope behind")
                             for index, point in ipairs(strand.components) do
                                 table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
                             end
@@ -332,20 +352,35 @@ function run()
                     elseif facingChange(strandIndex, -1, squid) > 0 and facingChange(strandIndex, 1, squid) < 0 then
                         print("concave")
                         if facingChange(strandIndex, -1, squid) == 1 and facingChange(strandIndex, 1, squid) == -1 then
-                            for index, point in ipairs(strand.components) do
-                                if index <= #strand.components / 2 then
+                            -- print("test")
+                            if (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2)
+                            and (facingChange(strandIndex, 2, squid) == 0 or strandSize(strandIndex, 1, squid) > 2) then
+                                print("-gentle concave")
+                                for index, point in ipairs(strand.components) do
+                                    if index <= #strand.components / 2 then
+                                        table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                                    else
+                                        table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                                    end
+                                end
+                            elseif (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2) then
+                                print("-gentle concave slope behind")
+                                for index, point in ipairs(strand.components) do
                                     table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
-                                else
+                                end
+                            elseif (facingChange(strandIndex, 2, squid) == 0 or strandSize(strandIndex, 1, squid) > 2) then
+                                print("-gentle concave slope ahead")
+                                for index, point in ipairs(strand.components) do
                                     table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
                                 end
                             end
                         elseif facingChange(strandIndex, -1, squid) == -1 then
                             for index, point in ipairs(strand.components) do
-                                table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
+                                -- table.insert(aliasPixels, calculatePixel(point, strand, index, 1))
                             end
                         elseif facingChange(strandIndex, 1, squid) == 1 then
                             for index, point in ipairs(strand.components) do
-                                table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
+                                -- table.insert(aliasPixels, calculatePixel(point, strand, index, -1))
                             end
                         end
                     elseif facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) > 0 then
@@ -517,13 +552,13 @@ function run()
             if aInside and pixel.percent < 1 then
                 sourceValue = sourceImage:getPixel(pixel.x - cel.position.x, pixel.y - cel.position.y)
                 inletValue = sourceImage:getPixel(pixel.compareX - cel.position.x, pixel.compareY - cel.position.y)
-                print(string.format("S:(%d, %d), C:(%d, %d), %f P", pixel.x, pixel.y, pixel.compareX, pixel.compareY, pixel.percent))
-                print(inletValue)
+                -- print(string.format("S:(%d, %d), C:(%d, %d), %f P", pixel.x, pixel.y, pixel.compareX, pixel.compareY, pixel.percent))
+                -- print(inletValue)
                 image:drawPixel(pixel.x - cel.position.x, pixel.y - cel.position.y, mixColour(sourceValue, inletValue, nil, pixel.percent))
             elseif not aInside and pixel.percent > 0 then
                 sourceValue = sourceImage:getPixel(pixel.sourceX - cel.position.x, pixel.sourceY - cel.position.y)
                 underValue = sourceImage:getPixel(pixel.x - cel.position.x, pixel.y - cel.position.y)
-                print(string.format("U:(%d, %d), S:(%d, %d), %f P", pixel.x, pixel.y, pixel.sourceX, pixel.sourceY, pixel.percent))
+                -- print(string.format("U:(%d, %d), S:(%d, %d), %f P", pixel.x, pixel.y, pixel.sourceX, pixel.sourceY, pixel.percent))
                 image:drawPixel(pixel.x - cel.position.x, pixel.y - cel.position.y, mixColour(sourceValue, underValue, nil, pixel.percent))
             end
         end
