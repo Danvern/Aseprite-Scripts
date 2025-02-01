@@ -1,9 +1,3 @@
-local spr = app.activeSprite
-if not spr then return end
-
-local baseSelection = spr.selection
-if baseSelection.isEmpty then print("Please select a region to anti-alias around (use the magic wand for best results)") return end
-
 aMax=0.5
 aMin=0.0
 aScale=1.0
@@ -16,7 +10,89 @@ aAverageInsideColor=true
 -- "constant", "linear", "normal bias"
 aAverageInsideColorFormula="normal bias"
 
-function cutCornersDialogue()
+function init(plugin)
+    if plugin.preferences.aliasMax == nil then
+        plugin.preferences.aliasMax = aMax
+    else
+        aMax = plugin.preferences.aliasMax
+    end
+    if plugin.preferences.aliasMin == nil then
+        plugin.preferences.aliasMin = aMin
+    else
+        aMin = plugin.preferences.aliasMin
+    end
+    if plugin.preferences.aliasScale == nil then
+        plugin.preferences.aliasScale = aScale
+    else
+        aScale = plugin.preferences.aliasScale
+    end
+    if plugin.preferences.aliasInside == nil then
+        plugin.preferences.aliasInside = aInside
+    else
+        aInside = plugin.preferences.aliasInside
+    end
+    if plugin.preferences.aliasAutomatic == nil then
+        plugin.preferences.aliasAutomatic = aAutomate
+    else
+        aAutomatic = plugin.preferences.aliasAutomatic
+    end
+    if plugin.preferences.aliasTransparency == nil then
+        plugin.preferences.aliasTransparency = aTransparency
+    else
+        aTransparency = plugin.preferences.aliasTransparency
+    end
+    if plugin.preferences.aliasAverageInsideColor == nil then
+        plugin.preferences.aliasAverageInsideColor = aAverageInsideColor
+    else
+        aAverageInsideColor = plugin.preferences.aliasAverageInsideColor
+    end
+    if plugin.preferences.aliasAverageInsideColorFormula == nil then
+        plugin.preferences.aliasAverageInsideColorFormula = aAverageInsideColorFormula
+    else
+        aAverageInsideColorFormula = plugin.preferences.aliasAverageInsideColorFormula
+    end
+
+    plugin:newCommand{
+        id="AATool",
+        title="AA Tool",
+        group="sprite_properties",
+        onclick=function()
+            launchDialogue(plugin)
+        end
+    }
+    plugin:newCommand{
+        id="AAToolND)",
+        title="AA Tool (No Dialogue)",
+        group="sprite_properties",
+        onclick=function()
+            skipDialogue(plugin)
+        end
+    }
+end
+
+function launchDialogue(plugin)
+    checkValidSelection()
+    if cutCornersDialogue(plugin) then
+        app.transaction(cutCorners())
+        app.refresh()
+    end
+end
+
+function skipDialogue()
+    checkValidSelection()
+    app.transaction(cutCorners())
+    app.refresh()
+end
+
+function checkValidSelection()
+    spr = app.activeSprite
+    if not spr then return end
+
+    baseSelection = spr.selection
+    if baseSelection.isEmpty then print("Please select a region to anti-alias around (use the magic wand for best results)") return end
+end
+
+function cutCornersDialogue(plugin)
     local info = Dialog()
         info:label{ 
             id=string,
@@ -62,13 +138,13 @@ function cutCornersDialogue()
             id=string,
             text="Colour Application Settings:"
         }
-        :check{
+        :radio{
             id="aliasTransparency",
             text="Allow blending transparent colours.",
             selected=aTransparency
         }
         :newrow()
-        :check{
+        :radio{
             id="aliasAverageInsideColor",
             text="Contextually pick colors from surface normals to increase accuracy.",
             selected=aAverageInsideColor
@@ -102,6 +178,15 @@ function cutCornersDialogue()
     aTransparency=info.data.aliasTransparency
     aAverageInsideColor=info.data.aliasAverageInsideColor
     aAverageInsideColorFormula=info.data.aliasAverageInsideColorFormula
+    
+    plugin.preferences.aliasMax = aMax
+    plugin.preferences.aliasMin = aMin
+    plugin.preferences.aliasScale = aScale
+    plugin.preferences.aliasInside = aInside
+    plugin.preferences.aliasAutomatic = aAutomate
+    plugin.preferences.aliasTransparency = aTransparency
+    plugin.preferences.aliasAverageInsideColor = aAverageInsideColor
+    plugin.preferences.aliasAverageInsideColorFormula = aAverageInsideColorFormula
     return info.data.ok
 end
         
@@ -314,8 +399,8 @@ function cutCorners()
         end
         pixel.sourceX = strand.components[cornerIndex].x
         pixel.sourceY = strand.components[cornerIndex].y
-        pixel.compareX = strand.components[cornerIndex].x + directionsX[rotateFacing(strand.normalFacing, normalOffset * strand.spin)]
-        pixel.compareY = strand.components[cornerIndex].y + directionsY[rotateFacing(strand.normalFacing, normalOffset * strand.spin)]
+        pixel.compareX = strand.components[cornerIndex].x + directionsX[rotateFacing(strand.normalFacing, normalOffset)]
+        pixel.compareY = strand.components[cornerIndex].y + directionsY[rotateFacing(strand.normalFacing, normalOffset)]
         local thresholdPercent = index / #strand.components
         local percent = 0.0
         if aInside then
@@ -569,8 +654,7 @@ function cutCorners()
             if aInside and pixel.percent < 1 then
                 local sourceValue = sourceImage:getPixel(pixel.x - cel.position.x, pixel.y - cel.position.y)
                 local inletValue = sourceImage:getPixel(pixel.compareX - cel.position.x, pixel.compareY - cel.position.y)
-                if aAverageInsideColor and 0 <= pixel.normalX - cel.position.x and pixel.normalX - cel.position.x < spr.width
-                and 0 <= pixel.normalY - cel.position.y and pixel.normalY - cel.position.y < spr.height then
+                if aAverageInsideColor then
                     local normalValue = sourceImage:getPixel(pixel.normalX - cel.position.x, pixel.normalY - cel.position.y)
                     local cornerValue = sourceImage:getPixel(pixel.sourceX - cel.position.x, pixel.sourceY - cel.position.y)
                     if aAverageInsideColorFormula == "linear" then
@@ -586,9 +670,7 @@ function cutCorners()
                         inletValue = mixColour(normalValue, inletValue, nil, 0.5)
                     end
                 end
-                -- if pixel.x - cel.position.x == 169 then
-                    -- print(string.format("S:(%d, %d), C:(%d, %d), %f P", pixel.x, pixel.y, pixel.compareX, pixel.compareY, pixel.percent))
-                -- end
+                -- print(string.format("S:(%d, %d), C:(%d, %d), %f P", pixel.x, pixel.y, pixel.compareX, pixel.compareY, pixel.percent))
                 image:drawPixel(pixel.x - cel.position.x, pixel.y - cel.position.y, mixColour(sourceValue, inletValue, nil, pixel.percent))
             elseif not aInside and pixel.percent > 0 then
                 local sourceValue = sourceImage:getPixel(pixel.sourceX - cel.position.x, pixel.sourceY - cel.position.y)
@@ -613,8 +695,6 @@ function cutCorners()
     end
 end
 
-if cutCornersDialogue() then
-    app.transaction(cutCorners())
-end
+function exit(plugin)
 
-app.refresh()
+end
