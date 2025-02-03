@@ -47,6 +47,7 @@ local function calculatePixel(point, strand, index, primaryVertexOffset, scale, 
 				percent = pixelchecker.clamp(1.0, (1.0 - (index - 1) / #strand.components) / (aScale * scale), 0.0)
 			end
 		end
+		if index > 3 then percent = 0 end --#TODO: Quick test of limiter
 	else
 		if primaryVertexOffset > 0 then
 			if aMin <= 1.0 - thresholdPercent and 1.0 - thresholdPercent <= aMax then
@@ -58,6 +59,7 @@ local function calculatePixel(point, strand, index, primaryVertexOffset, scale, 
 				percent = 1.0 - pixelchecker.clamp(1.0, (index / #strand.components) / (aScale * scale), 0.0)
 			end
 		end
+		if index > 3 then percent = 0 end --#TODO: Quick test of limiter
 	end
 	pixel.percent = percent
 	pixel.max = math.ceil(#strand.components * aScale * scale)

@@ -1,5 +1,11 @@
-v0.2.0a
+v0.5.0a
+- AA separated into its own layer option
+- AA integer limit option
+v0.4.0a
 - Big code refactor
+- Limit AA to an amount.
+- Limit colours.
+- AA on separate layer
 v0.1.0a
 - First release.
 - Simple outer edge of selection AA stencil.
