@@ -8,7 +8,7 @@ local aMin = 0.0
 local aScale = 1.0
 local aInside = false
 local aNewLayer = true
-local aAutomate = true 
+local aAutomate = true
 local aTransparency = true
 local aConcaveSpacing = 2
 local aConcaveScale = 1.0
@@ -123,16 +123,16 @@ end
 
 local function activate(baseSelection)
 	local aliasPixels = cornercutter.cutCorners(baseSelection, aInside, aScale, aMin, aMax)
-	local currentSprite = app.activeSprite
+	local currentSprite = app.sprite
 
 	currentSprite.selection = Selection()
-	local image = app.activeImage:clone()
-	local sourceImage = app.activeImage
-	local cel = app.activeImage.cel
+	local image = app.image:clone()
+	local sourceImage = app.image
 	local pc = app.pixelColor
 	-- color selection
 	if aAutomate and #aliasPixels > 0 then
-		pixelcolor.colorPixels(sourceImage, cel, aliasPixels, currentSprite, aAverageInsideColor, aAverageInsideColor,
+		pixelcolor.colorPixels(sourceImage, app.image.cel, aliasPixels, currentSprite, aAverageInsideColor,
+			aAverageInsideColor,
 			image, aInside, pc, aTransparency)
 	elseif #aliasPixels > 0 then
 		-- returned found pixels as a selection
@@ -147,11 +147,20 @@ local function activate(baseSelection)
 		print("Invalid selection. There's no smoothing out the hard life of an orphan.")
 	end
 
-	app.activeImage:drawImage(image)
+	if (aNewLayer) then
+		--local newLayer = currentSprite:newLayer()
+		--local newCel = currentSprite.newCel(newLayer, app.frame)
+		--newCel.image = image;
+		--app.image:drawImage(image)
+		--local currentFrame = app.frame.frameNumber
+		app.activeSprite:newCel(app.activeSprite:newLayer(), app.activeFrame, image, Point(0, 0))
+	else
+		app.image:drawImage(image)
+	end
 end
 
 local function checkValidSelection()
-	local currentSprite = app.activeSprite
+	local currentSprite = app.sprite
 	if not currentSprite then return end
 
 	local baseSelection = currentSprite.selection
