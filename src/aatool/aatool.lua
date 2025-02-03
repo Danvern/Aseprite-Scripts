@@ -1,6 +1,8 @@
 local cornercutter = require("cornercutter")
 local pixelcolor = require("pixelcolor")
 
+local commandName = "Auto-Antialias"
+
 local aMax = 0.5
 local aMin = 0.0
 local aScale = 1.0
@@ -155,7 +157,7 @@ end
 local function launchDialogue(plugin)
 	local baseSelection = checkValidSelection()
 	if cutCornersDialogue(plugin) and baseSelection then
-		app.transaction(activate(baseSelection))
+		app.transaction(commandName, activate(baseSelection))
 		app.refresh()
 	end
 end
@@ -163,7 +165,7 @@ end
 local function skipDialogue()
 	local baseSelection = checkValidSelection()
 	if baseSelection then
-		app.transaction(activate(baseSelection))
+		app.transaction(commandName, activate(baseSelection))
 		app.refresh()
 	end
 end
