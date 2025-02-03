@@ -1,3 +1,5 @@
+v0.5.1a
+- Driver algorithm improvements for consistency
 v0.5.0a
 - AA separated into its own layer option
 - AA integer limit option

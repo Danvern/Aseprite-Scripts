@@ -42,24 +42,26 @@ local function calculatePixel(point, strand, index, primaryVertexOffset, scale, 
 			if aMin <= thresholdPercent and thresholdPercent <= aMax then
 				percent = pixelchecker.clamp(1.0, index / (#strand.components * aScale * scale), 0.0)
 			end
+			if #strand.components - index > 3 then percent = 0 end --#TODO: Quick test of limiter
 		else
 			if aMin <= 1.0 - thresholdPercent and 1.0 - thresholdPercent <= aMax then
 				percent = pixelchecker.clamp(1.0, (1.0 - (index - 1) / #strand.components) / (aScale * scale), 0.0)
 			end
+			if index > 3 then percent = 0 end --#TODO: Quick test of limiter
 		end
-		if index > 3 then percent = 0 end --#TODO: Quick test of limiter
 	else
 		if primaryVertexOffset > 0 then
 			if aMin <= 1.0 - thresholdPercent and 1.0 - thresholdPercent <= aMax then
 				percent = pixelchecker.clamp(1.0, (index - 1 - (#strand.components * (1.0 - aScale * scale)))
 					/ (#strand.components * aScale * scale), 0.0)
 			end
+			if #strand.components - index > 3 then percent = 0 end --#TODO: Quick test of limiter
 		else
 			if aMin <= thresholdPercent and thresholdPercent <= aMax then
 				percent = 1.0 - pixelchecker.clamp(1.0, (index / #strand.components) / (aScale * scale), 0.0)
 			end
+			if index > 3 then percent = 0 end --#TODO: Quick test of limiter
 		end
-		if index > 3 then percent = 0 end --#TODO: Quick test of limiter
 	end
 	pixel.percent = percent
 	pixel.max = math.ceil(#strand.components * aScale * scale)
@@ -150,9 +152,11 @@ local function markAliasInside(squid, aliasPixels, strand, strandIndex, aScale, 
 				-- print("-gentle convex")
 				for index, point in ipairs(strand.components) do
 					if index <= #strand.components / 2 then
-						table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 0.5, aScale, aMin, aMax, aInside))
+						table.insert(aliasPixels,
+							calculatePixel(point, strand, index, 1, 0.5, aScale, aMin, aMax, aInside))
 					else
-						table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 0.5, aScale, aMin, aMax, aInside))
+						table.insert(aliasPixels,
+							calculatePixel(point, strand, index, -1, 0.5, aScale, aMin, aMax, aInside))
 					end
 				end
 			elseif (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2) then
@@ -204,7 +208,8 @@ local function markAliasOutside(squid, aliasPixels, strand, strandIndex, aScale,
 				-- print("-gentle concave")
 				for index, point in ipairs(strand.components) do
 					if index <= #strand.components / 2 then
-						table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 0.5, aScale, aMin, aMax, false))
+						table.insert(aliasPixels,
+							calculatePixel(point, strand, index, -1, 0.5, aScale, aMin, aMax, false))
 					else
 						table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 0.5, aScale, aMin, aMax, false))
 					end
@@ -263,7 +268,6 @@ function cornercutter.cutCorners(baseSelection, aInside, aScale, aMin, aMax)
 	local aliasPixels = {}
 	local driverData = pixeldriver.driveAll(baseSelection, corners)
 	for _, coord in ipairs(corners) do
-
 		if #driverData.webCluster > 0 then
 			for squidex, tendril in ipairs(driverData.webCluster) do
 				generateAliasData(tendril, aliasPixels, aInside, aScale, aMin, aMax)
