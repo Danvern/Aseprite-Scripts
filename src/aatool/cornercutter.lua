@@ -4,6 +4,8 @@ local grid = require("grid")
 
 local cornercutter = {}
 
+local maxSteps = 3
+
 
 -- general purpose calculation
 local function calculatePixel(point, strand, index, primaryVertexOffset, scale, aScale, aMin, aMax, aInside)
@@ -47,7 +49,7 @@ local function calculatePixel(point, strand, index, primaryVertexOffset, scale, 
 			if aMin <= 1.0 - thresholdPercent and 1.0 - thresholdPercent <= aMax then
 				percent = pixelchecker.clamp(1.0, (1.0 - (index - 1) / #strand.components) / (aScale * scale), 0.0)
 			end
-			if index > 3 then percent = 0 end --#TODO: Quick test of limiter
+			if index > 2 then percent = 0 end --#TODO: Quick test of limiter
 		end
 	else
 		if primaryVertexOffset > 0 then
@@ -55,12 +57,12 @@ local function calculatePixel(point, strand, index, primaryVertexOffset, scale, 
 				percent = pixelchecker.clamp(1.0, (index - 1 - (#strand.components * (1.0 - aScale * scale)))
 					/ (#strand.components * aScale * scale), 0.0)
 			end
-			if #strand.components - index > 3 then percent = 0 end --#TODO: Quick test of limiter
+			if #strand.components - index > maxSteps - 1 then percent = 0 end --#TODO: Quick test of limiter needs to be one less than below
 		else
 			if aMin <= thresholdPercent and thresholdPercent <= aMax then
 				percent = 1.0 - pixelchecker.clamp(1.0, (index / #strand.components) / (aScale * scale), 0.0)
 			end
-			if index > 3 then percent = 0 end --#TODO: Quick test of limiter
+			if index > maxSteps then percent = 0 end --#TODO: Quick test of limiter
 		end
 	end
 	pixel.percent = percent

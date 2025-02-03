@@ -20,7 +20,7 @@ local function cutCornersDialogue(plugin)
 	local info = Dialog()
 	info:label {
 		id = string,
-		label = "\"Cutting Corners\" AA Assistant v0.4.1",
+		label = "\"Cutting Corners\" AA Assistant v0.5.0a",
 		text = "Set percentages and other values to control the selection area."
 	}
 		:slider {
