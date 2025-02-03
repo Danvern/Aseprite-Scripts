@@ -195,7 +195,7 @@ function init(plugin)
 	if plugin.preferences.aliasAutomatic == nil then
 		plugin.preferences.aliasAutomatic = aAutomate
 	else
-		aAutomatic = plugin.preferences.aliasAutomatic
+		aAutomate = plugin.preferences.aliasAutomatic
 	end
 	if plugin.preferences.aliasTransparency == nil then
 		plugin.preferences.aliasTransparency = aTransparency
@@ -226,7 +226,7 @@ function init(plugin)
 		title = "AA Tool (No Dialogue)",
 		group = "sprite_properties",
 		onclick = function()
-			skipDialogue(plugin)
+			skipDialogue()
 		end
 	}
 end
