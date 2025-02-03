@@ -54,11 +54,21 @@ function pixelchecker.checkDirection(direction, driverXY)
 end
 
 --
-function pixelchecker.checkFacingEdge(baseSelection, direction)
-	local point = pixelchecker.checkDirection(direction)
+function pixelchecker.checkFacingEdge(baseSelection, direction, driverXY)
+	local point = pixelchecker.checkDirection(direction, driverXY)
 	local checkAdjacency = pixelchecker.adjacencyCount(baseSelection, point.x, point.y)
 	-- print(string.format("(%d, %d) adjacent %d", checkX, checkY, checkAdjacency))
 	return baseSelection:contains(point.x, point.y) and checkAdjacency < 4
+end
+
+function pixelchecker.rotateFacingTwo(facing, spin)
+	local face = facing - 1 + spin
+	if face < 0 then
+		face = face % -8 + 8
+	else
+		face = face % 8
+	end
+	return face + 1
 end
 
 return pixelchecker

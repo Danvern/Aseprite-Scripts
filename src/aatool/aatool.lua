@@ -112,7 +112,7 @@ local function cutCornersDialogue(plugin)
 end
 
 local function activate(baseSelection)
-	local aliasPixels = cornercutter.cutCorners(baseSelection)
+	local aliasPixels = cornercutter.cutCorners(baseSelection, aInside, aScale, aMin, aMax)
 	local currentSprite = app.activeSprite
 
 	currentSprite.selection = Selection()
@@ -154,7 +154,7 @@ end
 
 local function launchDialogue(plugin)
 	local baseSelection = checkValidSelection()
-	if cutCornersDialogue(plugin) then
+	if cutCornersDialogue(plugin) and baseSelection then
 		app.transaction(activate(baseSelection))
 		app.refresh()
 	end
@@ -162,69 +162,71 @@ end
 
 local function skipDialogue()
 	local baseSelection = checkValidSelection()
-	app.transaction(activate(baseSelection))
-	app.refresh()
+	if baseSelection then
+		app.transaction(activate(baseSelection))
+		app.refresh()
+	end
 end
 
 
 function init(plugin)
-    if plugin.preferences.aliasMax == nil then
-        plugin.preferences.aliasMax = aMax
-    else
-        aMax = plugin.preferences.aliasMax
-    end
-    if plugin.preferences.aliasMin == nil then
-        plugin.preferences.aliasMin = aMin
-    else
-        aMin = plugin.preferences.aliasMin
-    end
-    if plugin.preferences.aliasScale == nil then
-        plugin.preferences.aliasScale = aScale
-    else
-        aScale = plugin.preferences.aliasScale
-    end
-    if plugin.preferences.aliasInside == nil then
-        plugin.preferences.aliasInside = aInside
-    else
-        aInside = plugin.preferences.aliasInside
-    end
-    if plugin.preferences.aliasAutomatic == nil then
-        plugin.preferences.aliasAutomatic = aAutomate
-    else
-        aAutomatic = plugin.preferences.aliasAutomatic
-    end
-    if plugin.preferences.aliasTransparency == nil then
-        plugin.preferences.aliasTransparency = aTransparency
-    else
-        aTransparency = plugin.preferences.aliasTransparency
-    end
-    if plugin.preferences.aliasAverageInsideColor == nil then
-        plugin.preferences.aliasAverageInsideColor = aAverageInsideColor
-    else
-        aAverageInsideColor = plugin.preferences.aliasAverageInsideColor
-    end
-    if plugin.preferences.aliasAverageInsideColorFormula == nil then
-        plugin.preferences.aliasAverageInsideColorFormula = aAverageInsideColorFormula
-    else
-        aAverageInsideColorFormula = plugin.preferences.aliasAverageInsideColorFormula
-    end
+	if plugin.preferences.aliasMax == nil then
+		plugin.preferences.aliasMax = aMax
+	else
+		aMax = plugin.preferences.aliasMax
+	end
+	if plugin.preferences.aliasMin == nil then
+		plugin.preferences.aliasMin = aMin
+	else
+		aMin = plugin.preferences.aliasMin
+	end
+	if plugin.preferences.aliasScale == nil then
+		plugin.preferences.aliasScale = aScale
+	else
+		aScale = plugin.preferences.aliasScale
+	end
+	if plugin.preferences.aliasInside == nil then
+		plugin.preferences.aliasInside = aInside
+	else
+		aInside = plugin.preferences.aliasInside
+	end
+	if plugin.preferences.aliasAutomatic == nil then
+		plugin.preferences.aliasAutomatic = aAutomate
+	else
+		aAutomatic = plugin.preferences.aliasAutomatic
+	end
+	if plugin.preferences.aliasTransparency == nil then
+		plugin.preferences.aliasTransparency = aTransparency
+	else
+		aTransparency = plugin.preferences.aliasTransparency
+	end
+	if plugin.preferences.aliasAverageInsideColor == nil then
+		plugin.preferences.aliasAverageInsideColor = aAverageInsideColor
+	else
+		aAverageInsideColor = plugin.preferences.aliasAverageInsideColor
+	end
+	if plugin.preferences.aliasAverageInsideColorFormula == nil then
+		plugin.preferences.aliasAverageInsideColorFormula = aAverageInsideColorFormula
+	else
+		aAverageInsideColorFormula = plugin.preferences.aliasAverageInsideColorFormula
+	end
 
-    plugin:newCommand{
-        id="AATool",
-        title="AA Tool",
-        group="sprite_properties",
-        onclick=function()
-            launchDialogue(plugin)
-        end
-    }
-    plugin:newCommand{
-        id="AAToolND)",
-        title="AA Tool (No Dialogue)",
-        group="sprite_properties",
-        onclick=function()
-            skipDialogue(plugin)
-        end
-    }
+	plugin:newCommand {
+		id = "AATool",
+		title = "AA Tool",
+		group = "sprite_properties",
+		onclick = function()
+			launchDialogue(plugin)
+		end
+	}
+	plugin:newCommand {
+		id = "AAToolND)",
+		title = "AA Tool (No Dialogue)",
+		group = "sprite_properties",
+		onclick = function()
+			skipDialogue(plugin)
+		end
+	}
 end
 
 function exit(plugin)

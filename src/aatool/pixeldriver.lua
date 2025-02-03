@@ -9,7 +9,7 @@ local function createDriver(coord)
 		-- clockwise starting from the top middle
 		facing = 1,
 		spinDirection = 0,
-		driverXY = { coord[1], coord[2] },
+		driverXY = { 0, 0 },
 		borderWeb = {},
 		webCluster = {},
 		exploitedPixels = {},
@@ -23,8 +23,8 @@ local function markPixel(exploitedPixels, driver, selectionBounds)
 end
 
 -- Rotate facing by specified amount of offsets. Positive is clockwise.
-local function rotateFacing(driver, spin)
-	local face = driver.facing - 1 + spin
+local function rotateFacing(facing, spin)
+	local face = facing - 1 + spin
 	if face < 0 then
 		face = face % -8 + 8
 	else
@@ -42,7 +42,7 @@ local function checkHugDirection(baseSelection, direction, driverXY)
 	local counterY = grid.directionsY[rotateFacing(direction, -1)] + driverXY[2]
 	-- print(string.format("Clock: %d, %d - Counter: %d, %d", clockX, clockY, counterX, counterY))
 	-- print("checking direction...")
-	if pixelchecker.checkFacingEdge(direction) then
+	if pixelchecker.checkFacingEdge(baseSelection, direction, driverXY) then
 		-- print("is edge, checking for rotation...")
 		if not baseSelection:contains(counterX, counterY) then
 			return 1
@@ -59,8 +59,8 @@ local function driveForwards(driver)
 	-- print("drove to " + table.concat(driver, ", "))
 end
 
-function pixeldriver.driveAll(baseSelection, coord, corners)
-	local driver = createDriver(coord)
+function pixeldriver.driveAll(baseSelection, corners)
+	local driver = createDriver()
 	-- generate a series of looped border data
 	for _, coord in ipairs(corners) do
 		driver.driverXY = coord
@@ -94,14 +94,14 @@ function pixeldriver.drive(driver, baseSelection, exploitedPixels, webCluster, c
 				end
 				-- Check if facing is navigable without direction change, advance and add the coordinate to strand.
 				local strand = {}
-				while (pixelchecker.checkFacingEdge(driver.facing) and not pixelchecker.checkFacingEdge(rotateFacing(driver.facing, spinDirection * -1))
-						and not (pixelchecker.checkFacingEdge(rotateFacing(driver.facing, spinDirection * -2))
-							and (baseSelection:contains(pixelchecker.checkDirection(rotateFacing(driver.facing, spinDirection * -1)).x,
-								pixelchecker.checkDirection(rotateFacing(driver.facing, spinDirection * -1)).y) or #strand > 0))) do
+				while (pixelchecker.checkFacingEdge(baseSelection, driver.facing, driver.driverXY) and not pixelchecker.checkFacingEdge(baseSelection, rotateFacing(driver.facing, spinDirection * -1), driver.driverXY)
+						and not (pixelchecker.checkFacingEdge(baseSelection, rotateFacing(driver.facing, spinDirection * -2), driver.driverXY)
+							and (baseSelection:contains(pixelchecker.checkDirection(rotateFacing(driver.facing, spinDirection * -1), driver.driverXY).x,
+								pixelchecker.checkDirection(rotateFacing(driver.facing, spinDirection * -1), driver.driverXY).y) or #strand > 0))) do
 					table.insert(strand, { ["x"] = driver.driverXY[1], ["y"] = driver.driverXY[2] })
 					--print("  added pixel to strand : " .. table.concat(driver, ", "))
 					markPixel(exploitedPixels, driver, baseSelection.bounds)
-					driveForwards()
+					driveForwards(driver)
 				end
 				table.insert(strand, { ["x"] = driver.driverXY[1], ["y"] = driver.driverXY[2] })
 				markPixel(exploitedPixels, driver, baseSelection.bounds)
@@ -116,15 +116,15 @@ function pixeldriver.drive(driver, baseSelection, exploitedPixels, webCluster, c
 					-- print(" completed strand at: "..table.concat(driver, ", ").." facing "..facing.." length "..#strand..". rotating...")
 				end
 				-- Rotate until navigable starting 90 degrees offset to hug border, advance and terminate strand.
-				driver.facing = rotateFacing(driver, spinDirection * -2)
+				driver.facing = rotateFacing(driver.facing, spinDirection * -2)
 				timeout = 0
-				while (not pixelchecker.checkFacingEdge(baseSelection, driver.facing) and timeout < 8) do
-					driver.facing = rotateFacing(driver, spinDirection)
+				while (not pixelchecker.checkFacingEdge(baseSelection, driver.facing, driver.driverXY) and timeout < 8) do
+					driver.facing = rotateFacing(driver.facing, spinDirection)
 					timeout = timeout + 1
 				end
 				--print(" rotation complete at facing: "..facing)
 				iteration = iteration + 1
-			until ((pixelchecker.sameCoord(driver.driverXY, cleanOrigin) and exploitedPixels[driver.checkDirection(driver.facing).x * driver.selectionBounds.height + driver.checkDirection(driver.facing).y] == true)
+			until ((pixelchecker.sameCoord(driver.driverXY, cleanOrigin) and exploitedPixels[pixelchecker.checkDirection(driver.facing, driver.driverXY).x * baseSelection.bounds.height + pixelchecker.checkDirection(driver.facing, driver.driverXY).y] == true)
 					or iteration > #corners * 2)
 			table.remove(driver.borderWeb, 1)
 			table.insert(webCluster, driver.borderWeb)

@@ -29,9 +29,9 @@ local function calculatePixel(point, strand, index, primaryVertexOffset, scale, 
 	pixel.sourceX = strand.components[cornerIndex].x
 	pixel.sourceY = strand.components[cornerIndex].y
 	pixel.compareX = strand.components[cornerIndex].x +
-		grid.directionsX[pixelchecker.rotateFacing(strand.normalFacing, normalOffset * strand.spin)]
+		grid.directionsX[pixelchecker.rotateFacingTwo(strand.normalFacing, normalOffset * strand.spin)]
 	pixel.compareY = strand.components[cornerIndex].y +
-		grid.directionsY[pixelchecker.rotateFacing(strand.normalFacing, normalOffset * strand.spin)]
+		grid.directionsY[pixelchecker.rotateFacingTwo(strand.normalFacing, normalOffset * strand.spin)]
 	local thresholdPercent = index / #strand.components
 	local percent = 0.0
 	if aInside then
@@ -113,7 +113,7 @@ local function facingChange(strandIndex, offset, web)
 	return difference * web[strandIndex].spin
 end
 
-local function markAliasInside(squid, aliasPixels, strand, strandIndex)
+local function markAliasInside(squid, aliasPixels, strand, strandIndex, aScale, aMin, aMax, aInside)
 	if facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) == -1 then
 		-- print("slope up ahead")
 		if (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2) then
@@ -122,7 +122,7 @@ local function markAliasInside(squid, aliasPixels, strand, strandIndex)
 			else
 				-- print("-gentle slope down behind")
 				for index, point in ipairs(strand.components) do
-					table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1))
+					table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1, aScale, aMin, aMax, aInside))
 				end
 			end
 		end
@@ -134,7 +134,7 @@ local function markAliasInside(squid, aliasPixels, strand, strandIndex)
 			else
 				-- print("-gentle slope down ahead (no rounded corner)")
 				for index, point in ipairs(strand.components) do
-					table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1))
+					table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1, aScale, aMin, aMax, aInside))
 				end
 			end
 		end
@@ -148,41 +148,41 @@ local function markAliasInside(squid, aliasPixels, strand, strandIndex)
 				-- print("-gentle convex")
 				for index, point in ipairs(strand.components) do
 					if index <= #strand.components / 2 then
-						table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 0.5))
+						table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 0.5, aScale, aMin, aMax, aInside))
 					else
-						table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 0.5))
+						table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 0.5, aScale, aMin, aMax, aInside))
 					end
 				end
 			elseif (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2) then
 				-- print("-gentle convex slope behind")
 				for index, point in ipairs(strand.components) do
-					table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1))
+					table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1, aScale, aMin, aMax, aInside))
 				end
 			elseif (facingChange(strandIndex, 2, squid) == 0 or strandSize(strandIndex, 1, squid) > 2) then
 				-- print("-gentle convex slope ahead")
 				for index, point in ipairs(strand.components) do
-					table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1))
+					table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1, aScale, aMin, aMax, aInside))
 				end
 			end
 		elseif facingChange(strandIndex, -1, squid) == -1 then
 			for index, point in ipairs(strand.components) do
-				-- table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1))
+				-- table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1, aScale, aMin, aMax, aInside))
 			end
 		elseif facingChange(strandIndex, 1, squid) == 1 then
 			for index, point in ipairs(strand.components) do
-				-- table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1))
+				-- table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1, aScale, aMin, aMax, aInside))
 			end
 		end
 	end
 end
 
-local function markAliasOutside(squid, aliasPixels, strand, strandIndex)
+local function markAliasOutside(squid, aliasPixels, strand, strandIndex, aScale, aMin, aMax, aInside)
 	if facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) == -1 then
 		-- print("slope up ahead")
 		if (facingChange(strandIndex, 2, squid) == 0 or strandSize(strandIndex, 1, squid) > 2) then
 			-- print("-gentle slope up ahead")
 			for index, point in ipairs(strand.components) do
-				table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1))
+				table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1, aScale, aMin, aMax, aInside))
 			end
 		end
 	elseif facingChange(strandIndex, -1, squid) == 1 and facingChange(strandIndex, 1, squid) > 0 then
@@ -190,7 +190,7 @@ local function markAliasOutside(squid, aliasPixels, strand, strandIndex)
 		if (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2) then
 			-- print("-gentle slope up behind")
 			for index, point in ipairs(strand.components) do
-				table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1))
+				table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1, aScale, aMin, aMax, aInside))
 			end
 		end
 	elseif facingChange(strandIndex, -1, squid) > 0 and facingChange(strandIndex, 1, squid) < 0 then
@@ -202,29 +202,29 @@ local function markAliasOutside(squid, aliasPixels, strand, strandIndex)
 				-- print("-gentle concave")
 				for index, point in ipairs(strand.components) do
 					if index <= #strand.components / 2 then
-						table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 0.5))
+						table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 0.5, aScale, aMin, aMax, aInside))
 					else
-						table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 0.5))
+						table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 0.5, aScale, aMin, aMax, aInside))
 					end
 				end
 			elseif (facingChange(strandIndex, -2, squid) == 0 or strandSize(strandIndex, -1, squid) > 2) then
 				-- print("-gentle concave slope behind")
 				for index, point in ipairs(strand.components) do
-					table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1))
+					table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1, aScale, aMin, aMax, aInside))
 				end
 			elseif (facingChange(strandIndex, 2, squid) == 0 or strandSize(strandIndex, 1, squid) > 2) then
 				-- print("-gentle concave slope ahead")
 				for index, point in ipairs(strand.components) do
-					table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1))
+					table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1, aScale, aMin, aMax, aInside))
 				end
 			end
 		elseif facingChange(strandIndex, -1, squid) == -1 then
 			for index, point in ipairs(strand.components) do
-				-- table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1))
+				-- table.insert(aliasPixels, calculatePixel(point, strand, index, 1, 1, aScale, aMin, aMax, aInside))
 			end
 		elseif facingChange(strandIndex, 1, squid) == 1 then
 			for index, point in ipairs(strand.components) do
-				-- table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1))
+				-- table.insert(aliasPixels, calculatePixel(point, strand, index, -1, 1, aScale, aMin, aMax, aInside))
 			end
 		end
 	elseif facingChange(strandIndex, -1, squid) < 0 and facingChange(strandIndex, 1, squid) > 0 then
@@ -233,19 +233,19 @@ local function markAliasOutside(squid, aliasPixels, strand, strandIndex)
 end
 
 
-local function generateAliasData(squid, aliasPixels, aInside)
+local function generateAliasData(squid, aliasPixels, aInside, aScale, aMin, aMax)
 	for strandIndex, strand in ipairs(squid) do
 		if strand.normalFacing % 2 == 1 then
 			if aInside then
-				markAliasInside(squid, aliasPixels, strand, strandIndex)
+				markAliasInside(squid, aliasPixels, strand, strandIndex, aScale, aMin, aMax, aInside)
 			else
-				markAliasOutside(squid, aliasPixels, strand, strandIndex)
+				markAliasOutside(squid, aliasPixels, strand, strandIndex, aScale, aMin, aMax, aInside)
 			end
 		end
 	end
 end
 
-function cornercutter.cutCorners(baseSelection)
+function cornercutter.cutCorners(baseSelection, aInside, aScale, aMin, aMax)
 	-- iterate through the boundaries of selection to add corner pixels to a table
 	local selectionBounds = baseSelection.bounds
 	local corners = {}
@@ -258,21 +258,26 @@ function cornercutter.cutCorners(baseSelection)
 		end
 	end
 
-	local driverData = pixeldriver.driveAll(baseSelection, corners)
-
-
-
-
 	local aliasPixels = {}
+	local driverData = pixeldriver.driveAll(baseSelection, corners)
+	for _, coord in ipairs(corners) do
+
+		if #driverData.webCluster > 0 then
+			for squidex, tendril in ipairs(driverData.webCluster) do
+				generateAliasData(tendril, aliasPixels, aInside, aScale, aMin, aMax)
+				-- print("border pixel data generation complete")
+			end
+		end
+	end
+
+
+
+
+
 	--
 
 
-	if #driverData.webCluster > 0 then
-		for squidex, tendril in ipairs(driverData.webCluster) do
-			generateAliasData(tendril)
-			-- print("border pixel data generation complete")
-		end
-	end
+
 
 	return aliasPixels;
 end
