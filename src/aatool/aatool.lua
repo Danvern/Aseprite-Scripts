@@ -170,7 +170,8 @@ local function skipDialogue()
 	end
 end
 
-
+-- Required Aseprite naming
+---@diagnostic disable-next-line: lowercase-global
 function init(plugin)
 	if plugin.preferences.aliasMax == nil then
 		plugin.preferences.aliasMax = aMax
@@ -231,6 +232,8 @@ function init(plugin)
 	}
 end
 
+-- Required Aseprite naming
+---@diagnostic disable-next-line: lowercase-global
 function exit(plugin)
 
 end
