@@ -1,4 +1,5 @@
 local grid = require("grid")
+local math = require("math")
 
 local pixelchecker = {}
 
@@ -9,10 +10,6 @@ function pixelchecker.getAdjacent(x, y)
 	adj[3] = { x, y - 1 }
 	adj[4] = { x, y + 1 }
 	return adj
-end
-
-function pixelchecker.clamp(maximum, number, minimum)
-	return math.max(math.min(maximum, number), minimum)
 end
 
 function pixelchecker.adjacencyCount(baseSelection, x, y)
