@@ -126,7 +126,7 @@ local function activate(baseSelection)
 	local currentSprite = app.sprite
 
 	currentSprite.selection = Selection()
-	local image = app.image:clone()
+	local image = Image(app.image.width, app.image.height)
 	local sourceImage = app.image
 	local pc = app.pixelColor
 	-- color selection
