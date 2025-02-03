@@ -252,7 +252,7 @@ function cornercutter.cutCorners(baseSelection)
 	for x = selectionBounds.x, selectionBounds.width + selectionBounds.x, 1 do
 		for y = selectionBounds.y, selectionBounds.height + selectionBounds.y, 1 do
 			-- print("test0")
-			if pixelchecker.checkCorner(x, y) then
+			if pixelchecker.checkCorner(baseSelection, x, y) then
 				table.insert(corners, { x, y })
 			end
 		end

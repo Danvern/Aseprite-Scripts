@@ -1,13 +1,5 @@
 local cornercutter = require("cornercutter")
-
-local spr = app.activeSprite
-if not spr then return end
-
-local baseSelection = spr.selection
-if baseSelection.isEmpty then
-	print("Please select a region to anti-alias around (use the magic wand for best results)")
-	return
-end
+local pixelcolor = require("pixelcolor")
 
 local aMax = 0.5
 local aMin = 0.0
@@ -21,7 +13,7 @@ local aAverageInsideColor = true
 -- "constant", "linear", "normal bias"
 local aAverageInsideColorFormula = "normal bias"
 
-local function cutCornersDialogue()
+local function cutCornersDialogue(plugin)
 	local info = Dialog()
 	info:label {
 		id = string,
@@ -67,13 +59,13 @@ local function cutCornersDialogue()
 			id = string,
 			text = "Colour Application Settings:"
 		}
-		:check {
+		:radio {
 			id = "aliasTransparency",
 			text = "Allow blending transparent colours.",
 			selected = aTransparency
 		}
 		:newrow()
-		:check {
+		:radio {
 			id = "aliasAverageInsideColor",
 			text = "Contextually pick colors from surface normals to increase accuracy.",
 			selected = aAverageInsideColor
@@ -107,15 +99,31 @@ local function cutCornersDialogue()
 	aTransparency = info.data.aliasTransparency
 	aAverageInsideColor = info.data.aliasAverageInsideColor
 	aAverageInsideColorFormula = info.data.aliasAverageInsideColorFormula
+
+	plugin.preferences.aliasMax = aMax
+	plugin.preferences.aliasMin = aMin
+	plugin.preferences.aliasScale = aScale
+	plugin.preferences.aliasInside = aInside
+	plugin.preferences.aliasAutomatic = aAutomate
+	plugin.preferences.aliasTransparency = aTransparency
+	plugin.preferences.aliasAverageInsideColor = aAverageInsideColor
+	plugin.preferences.aliasAverageInsideColorFormula = aAverageInsideColorFormula
 	return info.data.ok
 end
 
 local function activate(baseSelection)
 	local aliasPixels = cornercutter.cutCorners(baseSelection)
+	local currentSprite = app.activeSprite
 
+	currentSprite.selection = Selection()
+	local image = app.activeImage:clone()
+	local sourceImage = app.activeImage
+	local cel = app.activeImage.cel
+	local pc = app.pixelColor
 	-- color selection
 	if aAutomate and #aliasPixels > 0 then
-		colorPixels()
+		pixelcolor.colorPixels(sourceImage, cel, aliasPixels, currentSprite, aAverageInsideColor, aAverageInsideColor,
+			image, aInside, pc, aTransparency)
 	elseif #aliasPixels > 0 then
 		-- returned found pixels as a selection
 		local newSelection = Selection()
@@ -124,15 +132,101 @@ local function activate(baseSelection)
 				newSelection:add(Selection(Rectangle(pixel.x, pixel.y, 1, 1)))
 			end
 		end
-		spr.selection = newSelection
+		currentSprite.selection = newSelection
 	else
 		print("Invalid selection. There's no smoothing out the hard life of an orphan.")
 	end
+
+	app.activeImage:drawImage(image)
 end
 
+local function checkValidSelection()
+	local currentSprite = app.activeSprite
+	if not currentSprite then return end
 
-if cutCornersDialogue() then
+	local baseSelection = currentSprite.selection
+	if baseSelection.isEmpty then
+		print("Please select a region to anti-alias around (use the magic wand for best results)")
+		return
+	end
+	return baseSelection
+end
+
+local function launchDialogue(plugin)
+	local baseSelection = checkValidSelection()
+	if cutCornersDialogue(plugin) then
+		app.transaction(activate(baseSelection))
+		app.refresh()
+	end
+end
+
+local function skipDialogue()
+	local baseSelection = checkValidSelection()
 	app.transaction(activate(baseSelection))
+	app.refresh()
 end
 
-app.refresh()
+
+function init(plugin)
+    if plugin.preferences.aliasMax == nil then
+        plugin.preferences.aliasMax = aMax
+    else
+        aMax = plugin.preferences.aliasMax
+    end
+    if plugin.preferences.aliasMin == nil then
+        plugin.preferences.aliasMin = aMin
+    else
+        aMin = plugin.preferences.aliasMin
+    end
+    if plugin.preferences.aliasScale == nil then
+        plugin.preferences.aliasScale = aScale
+    else
+        aScale = plugin.preferences.aliasScale
+    end
+    if plugin.preferences.aliasInside == nil then
+        plugin.preferences.aliasInside = aInside
+    else
+        aInside = plugin.preferences.aliasInside
+    end
+    if plugin.preferences.aliasAutomatic == nil then
+        plugin.preferences.aliasAutomatic = aAutomate
+    else
+        aAutomatic = plugin.preferences.aliasAutomatic
+    end
+    if plugin.preferences.aliasTransparency == nil then
+        plugin.preferences.aliasTransparency = aTransparency
+    else
+        aTransparency = plugin.preferences.aliasTransparency
+    end
+    if plugin.preferences.aliasAverageInsideColor == nil then
+        plugin.preferences.aliasAverageInsideColor = aAverageInsideColor
+    else
+        aAverageInsideColor = plugin.preferences.aliasAverageInsideColor
+    end
+    if plugin.preferences.aliasAverageInsideColorFormula == nil then
+        plugin.preferences.aliasAverageInsideColorFormula = aAverageInsideColorFormula
+    else
+        aAverageInsideColorFormula = plugin.preferences.aliasAverageInsideColorFormula
+    end
+
+    plugin:newCommand{
+        id="AATool",
+        title="AA Tool",
+        group="sprite_properties",
+        onclick=function()
+            launchDialogue(plugin)
+        end
+    }
+    plugin:newCommand{
+        id="AAToolND)",
+        title="AA Tool (No Dialogue)",
+        group="sprite_properties",
+        onclick=function()
+            skipDialogue(plugin)
+        end
+    }
+end
+
+function exit(plugin)
+
+end
