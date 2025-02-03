@@ -11,6 +11,8 @@ local function createDriver(coord)
 		spinDirection = 0,
 		driverXY = { coord[1], coord[2] },
 		borderWeb = {},
+		webCluster = {},
+		exploitedPixels = {},
 	}
 	return newDriver
 end
@@ -58,21 +60,16 @@ local function driveForwards(driver)
 end
 
 function pixeldriver.driveAll(baseSelection, coord, corners)
-	local exploitedPixels = {}
-	local webCluster = {}
 	local driver = createDriver(coord)
 	-- generate a series of looped border data
 	for _, coord in ipairs(corners) do
 		driver.driverXY = coord
-		pixeldriver.drive(driver, baseSelection, exploitedPixels, webCluster, corners)
+		pixeldriver.drive(driver, baseSelection, driver.exploitedPixels, driver.webCluster, corners)
 	end
 	return driver
 end
 
 function pixeldriver.drive(driver, baseSelection, exploitedPixels, webCluster, corners)
-	local exploitedPixels = {}
-	local webCluster = {}
-
 	-- Perform calculations if not already exploited.
 	if exploitedPixels[driver.driverXY[1] * baseSelection.bounds.height + driver.driverXY[2]] == nil then
 		-- print("started border web at: "..table.concat(driver, ", "))
@@ -127,7 +124,7 @@ function pixeldriver.drive(driver, baseSelection, exploitedPixels, webCluster, c
 				end
 				--print(" rotation complete at facing: "..facing)
 				iteration = iteration + 1
-			until ((sameCoord(driver.driverXY, cleanOrigin) and exploitedPixels[driver.checkDirection(driver.facing).x * driver.selectionBounds.height + driver.checkDirection(driver.facing).y] == true)
+			until ((pixelchecker.sameCoord(driver.driverXY, cleanOrigin) and exploitedPixels[driver.checkDirection(driver.facing).x * driver.selectionBounds.height + driver.checkDirection(driver.facing).y] == true)
 					or iteration > #corners * 2)
 			table.remove(driver.borderWeb, 1)
 			table.insert(webCluster, driver.borderWeb)

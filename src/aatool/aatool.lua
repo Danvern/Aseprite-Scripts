@@ -21,7 +21,7 @@ local aAverageInsideColor = true
 -- "constant", "linear", "normal bias"
 local aAverageInsideColorFormula = "normal bias"
 
-function cutCornersDialogue()
+local function cutCornersDialogue()
 	local info = Dialog()
 	info:label {
 		id = string,
@@ -110,8 +110,29 @@ function cutCornersDialogue()
 	return info.data.ok
 end
 
+local function activate(baseSelection)
+	local aliasPixels = cornercutter.cutCorners(baseSelection)
+
+	-- color selection
+	if aAutomate and #aliasPixels > 0 then
+		colorPixels()
+	elseif #aliasPixels > 0 then
+		-- returned found pixels as a selection
+		local newSelection = Selection()
+		for index, pixel in ipairs(aliasPixels) do
+			if (pixel.percent > 0 and not aInside) or (pixel.percent < 1 and aInside) then
+				newSelection:add(Selection(Rectangle(pixel.x, pixel.y, 1, 1)))
+			end
+		end
+		spr.selection = newSelection
+	else
+		print("Invalid selection. There's no smoothing out the hard life of an orphan.")
+	end
+end
+
+
 if cutCornersDialogue() then
-	app.transaction(cornercutter.cutCorners(baseSelection))
+	app.transaction(activate(baseSelection))
 end
 
 app.refresh()

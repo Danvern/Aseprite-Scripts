@@ -3,7 +3,7 @@ local grid = require("grid")
 local pixelchecker = {}
 
 function pixelchecker.getAdjacent(x, y)
-	adj = {}
+	local adj = {}
 	adj[1] = { x - 1, y }
 	adj[2] = { x + 1, y }
 	adj[3] = { x, y - 1 }
@@ -36,7 +36,7 @@ end
 
 -- check if a pixel is a corner of the selection boundary
 function pixelchecker.checkCorner(baseSelection, x, y)
-	if baseSelection:contains(x, y) and adjacencyCount(baseSelection, x, y) < 3 then
+	if baseSelection:contains(x, y) and pixelchecker.adjacencyCount(baseSelection, x, y) < 3 then
 		-- print(string.format("Found corner here: %d, %d", x, y))
 		return true
 	end

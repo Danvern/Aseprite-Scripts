@@ -1,4 +1,6 @@
-v0.1a
+v0.2.0a
+- Big code refactor
+v0.1.0a
 - First release.
 - Simple outer edge of selection AA stencil.
 - Min-max thresholds for controlling stencil border bounds.
