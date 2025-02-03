@@ -7,7 +7,8 @@ local aMax = 0.5
 local aMin = 0.0
 local aScale = 1.0
 local aInside = false
-local aAutomate = true
+local aNewLayer = true
+local aAutomate = true 
 local aTransparency = true
 local aConcaveSpacing = 2
 local aConcaveScale = 1.0
@@ -44,6 +45,11 @@ local function cutCornersDialogue(plugin)
 		:separator {
 			id = string,
 			text = "Automatic Algorithm Settings:"
+		}
+		:check {
+			id = "aliasNewLayer",
+			text = "Apply colors on a new layer instead of the selected layer.",
+			selected = aNewLayer
 		}
 		:check {
 			id = "aliasAutomatic",
@@ -96,6 +102,7 @@ local function cutCornersDialogue(plugin)
 	aMax = info.data.aliasMax / 100
 	aMin = info.data.aliasMin / 100
 	aInside = info.data.aliasInside
+	aNewLayer = info.data.aliasNewLayer
 	aAutomate = info.data.aliasAutomatic
 	aScale = info.data.aliasScale / 100
 	aTransparency = info.data.aliasTransparency
@@ -106,6 +113,7 @@ local function cutCornersDialogue(plugin)
 	plugin.preferences.aliasMin = aMin
 	plugin.preferences.aliasScale = aScale
 	plugin.preferences.aliasInside = aInside
+	plugin.preferences.aliasNewLayer = aNewLayer
 	plugin.preferences.aliasAutomatic = aAutomate
 	plugin.preferences.aliasTransparency = aTransparency
 	plugin.preferences.aliasAverageInsideColor = aAverageInsideColor
@@ -192,6 +200,11 @@ function init(plugin)
 		plugin.preferences.aliasInside = aInside
 	else
 		aInside = plugin.preferences.aliasInside
+	end
+	if plugin.preferences.aliasNewLayer == nil then
+		plugin.preferences.aliasNewLayer = aNewLayer
+	else
+		aNewLayer = plugin.preferences.aliasNewLayer
 	end
 	if plugin.preferences.aliasAutomatic == nil then
 		plugin.preferences.aliasAutomatic = aAutomate
