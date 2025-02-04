@@ -255,6 +255,7 @@ local function generateAliasData(squid, aliasPixels, aInside, aScale, aMin, aMax
 	end
 end
 
+-- #TODO Make this read only within the bounds + 1 ?
 function cornercutter.cutCorners(baseSelection, aInside, aScale, aMin, aMax)
 	-- iterate through the boundaries of selection to add corner pixels to a table
 	local selectionBounds = baseSelection.bounds
@@ -262,7 +263,7 @@ function cornercutter.cutCorners(baseSelection, aInside, aScale, aMin, aMax)
 	for x = selectionBounds.x, selectionBounds.width + selectionBounds.x, 1 do
 		for y = selectionBounds.y, selectionBounds.height + selectionBounds.y, 1 do
 			-- print("test0")
-			if pixelchecker.checkCorner(baseSelection, x, y) then
+			if pixelchecker.isValidSelectionCorner(baseSelection, x, y) then
 				table.insert(corners, { x, y })
 			end
 		end

@@ -16,6 +16,12 @@ local aAverageInsideColor = true
 -- "constant", "linear", "normal bias"
 local aAverageInsideColorFormula = "normal bias"
 
+AAToolDebug = true;
+
+function IsInDebugMode()
+	return AAToolDebug
+end
+
 local function cutCornersDialogue(plugin)
 	local info = Dialog()
 	info:label {
