@@ -94,6 +94,7 @@ local function createDriver(coord, baseSelection)
 	end
 
 	-- Rotate clockwise until outside edge is perpendicular to facing direction.
+	-- Sets the spin direction if sucessful.
 	-- Return if successful.
 	function newDriver.rotateUntilTracingEdge(driver)
 		local timeout = 0
@@ -105,12 +106,13 @@ local function createDriver(coord, baseSelection)
 		end
 		if spinDirection ~= 0 then
 			driver.facing = rotateFacing(driver.facing, timeout)
+			driver.spinDirection = spinDirection;
 			return true
 		end
 		return false
 	end
 
-	function newDriver.driveAlongEdge(driver)
+	function newDriver.driveAlongEdge(driver, corners)
 		if ! driver:rotateUntilTracingEdge() then
 			-- print("border web was a dead end")
 			return
@@ -125,9 +127,9 @@ local function createDriver(coord, baseSelection)
 
 			-- Check if facing is navigable without direction change, advance and add the coordinate to strand. #TODO Optimize 16 checks to 8
 			local strand = {}
-			while (driver:checkFacingEdge() and not driver:checkFacingEdgeOffset(-1)
-					and not (driver.checkFacingEdgeOffset(-2)
-						and (baseSelection:contains(driver:checkHugDirectionOffset(-1).x, driver:checkHugDirectionOffset(-1).y) or #strand > 0))) do
+			while (driver:checkFacingEdge() and not driver:checkFacingEdgeOffset(driver.spinDirection * -1)
+					and not (driver.checkFacingEdgeOffset(driver.spinDirection * -2)
+						and (baseSelection:contains(driver:getAheadWhenRotated(driver.spinDirection * -1).x, driver:getAheadWhenRotated(driver.spinDirection * -1).y) or #strand > 0))) do
 				--print("  added pixel to strand : " .. table.concat(driver, ", "))
 				table.insert(strand, { ["x"] = driver.driverXY[1], ["y"] = driver.driverXY[2] })
 				driver:markPixel(baseSelection.bounds)
@@ -140,30 +142,30 @@ local function createDriver(coord, baseSelection)
 			table.insert(driver.borderWeb,
 				{
 					["components"] = strand,
-					["normalFacing"] = driver:rotateFacing(driver.facing, spinDirection * -2),
-					["spin"] =
-						spinDirection
+					["normalFacing"] = driver:rotateFacing(driver.facing, driver.spinDirection * -2),
+					["spin"] = driver.spinDirection
 				})
-			if #webCluster == 0 then
-				-- print(" completed strand at: "..table.concat(driver, ", ").." facing "..facing.." length "..#strand..". rotating...")
-			end
+			--if #driver.webCluster == 0 then
+			--	-- print(" completed strand at: "..table.concat(driver, ", ").." facing "..facing.." length "..#strand..". rotating...")
+			--end
 			-- Rotate until navigable starting 90 degrees offset to hug border, advance and terminate strand.
-			driver.facing = rotateFacing(driver.facing, spinDirection * -2)
+			driver.facing = rotateFacing(driver.facing, driver.spinDirection * -2)
 			timeout = 0
 			while (not pixelchecker.checkFacingEdge(baseSelection, driver.facing, driver.driverXY) and timeout < 8) do
-				driver.facing = rotateFacing(driver.facing, spinDirection)
+				driver.facing = rotateFacing(driver.facing, driver.spinDirection)
 				timeout = timeout + 1
 			end
 			--print(" rotation complete at facing: "..facing)
 			iteration = iteration + 1
-		until ((grid.sameCoord(driver.driverXY, cleanOrigin) and driver.visitedPixels[pixelchecker.checkDirection(driver.facing, driver.driverXY).x * baseSelection.bounds.height + pixelchecker.checkDirection(driver.facing, driver.driverXY).y] == true)
+		-- Stop when reaching starting point. #TODO Optimize this.
+		until ((grid.sameCoord(driver.driverXY, cleanOrigin) and driver.visitedPixels[driver:getAheadImFacing().x * baseSelection.bounds.height + driver:getAheadImFacing().y] == true)
 				or iteration > #corners * 2)
 		table.remove(driver.borderWeb, 1)
 		table.insert(driver.webCluster, driver.borderWeb)
 		-- print(string.format("completed border web %d of %d / %d strands", #webCluster, #borderWeb, #corners * 2))
 	end
 
-	function pixeldriver.drive(driver, baseSelection, webCluster, corners)
+	function pixeldriver.drive(driver, baseSelection, corners)
 		-- Only perform calculations if not already visited.
 		if driver.visitedPixels[driver.driverXY[1] * baseSelection.bounds.height + driver.driverXY[2]] ~= nil then
 			return
@@ -177,7 +179,7 @@ local function createDriver(coord, baseSelection)
 
 		-- Create strands until original location reached. (webCluster, borderWeb, strand, pixel)
 		-- to ensure a clean starting strand
-		driver:driveAlongEdge()
+		driver:driveAlongEdge(corners)
 	end
 
 	return newDriver
@@ -189,7 +191,7 @@ function pixeldriver.driveAll(baseSelection, corners)
 	-- generate a series of looped border data
 	for _, coord in ipairs(corners) do
 		driver.driverXY = coord
-		pixeldriver.drive(driver, baseSelection, driver.visitedPixels, driver.webCluster, corners)
+		pixeldriver.drive(driver, baseSelection, driver.visitedPixels, corners)
 	end
 	return driver
 end
