@@ -280,15 +280,6 @@ function cornercutter.cutCorners(baseSelection, aInside, aScale, aMin, aMax)
 		end
 	end
 
-
-
-
-
-	--
-
-
-
-
 	return aliasPixels;
 end
 

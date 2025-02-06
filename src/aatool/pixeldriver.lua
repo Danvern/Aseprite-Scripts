@@ -162,7 +162,7 @@ local function createDriver(baseSelection)
 			--print(" rotation complete at facing: "..facing)
 			iteration = iteration + 1
 
-		-- Stop when reaching starting point. #TODO Optimize this.
+			-- Stop when reaching starting point. #TODO Optimize this.
 		until ((grid.sameCoord(driver.driverXY, cleanOrigin) and driver.visitedPixels[driver:getAheadImFacing().x * baseSelection.bounds.height + driver:getAheadImFacing().y] == true)
 				or iteration > #corners * 2)
 		table.remove(driver.borderWeb, 1)
@@ -189,7 +189,6 @@ local function createDriver(baseSelection)
 
 	return newDriver
 end
-
 
 function pixeldriver.driveAll(baseSelection, corners)
 	local driver = createDriver(baseSelection)

@@ -31,9 +31,8 @@ local function mixColour(c1, c2, mask, percent, pc, aTransparency)
 	return pc.rgba(rVal, gVal, bVal, aVal)
 end
 
-function pixelcolor.colorPixels(sourceImage, cel, aliasPixels, currentSprite, aAverageInsideColorFormula, aAverageInsideColor, image, aInside, pc, aTransparency)
-	
-
+function pixelcolor.colorPixels(sourceImage, cel, aliasPixels, currentSprite, aAverageInsideColorFormula,
+								aAverageInsideColor, image, aInside, pc, aTransparency)
 	for _, pixel in ipairs(aliasPixels) do
 		if aInside and pixel.percent < 1 then
 			local sourceValue = sourceImage:getPixel(pixel.x - cel.position.x, pixel.y - cel.position.y)
@@ -70,8 +69,6 @@ function pixelcolor.colorPixels(sourceImage, cel, aliasPixels, currentSprite, aA
 				mixColour(sourceValue, underValue, nil, pixel.percent, pc, aTransparency))
 		end
 	end
-
 end
-
 
 return pixelcolor

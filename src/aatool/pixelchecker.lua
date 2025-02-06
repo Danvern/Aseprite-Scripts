@@ -11,7 +11,6 @@ local function getAdjacentCoordinates(x, y)
 	return adj
 end
 
-
 -- Returns the count of adjacent pixels which are inside of the provided selection.
 local function countAdjacentPixelsInSelection(baseSelection, x, y)
 	local result = 0
