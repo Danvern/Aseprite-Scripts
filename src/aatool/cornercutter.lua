@@ -1,7 +1,7 @@
 local pixelchecker = require("pixelchecker")
 local pixeldriver = require("pixeldriver")
 local grid = require("grid")
-local math = require("math")
+local utility = require("utility")
 
 local cornercutter = {}
 
@@ -43,25 +43,25 @@ local function calculatePixel(point, strand, index, primaryVertexOffset, scale, 
 			-- print(index)
 			-- print(#strand.components)
 			if aMin <= thresholdPercent and thresholdPercent <= aMax then
-				percent = math.clamp(1.0, index / (#strand.components * aScale * scale), 0.0)
+				percent = utility.clamp(1.0, index / (#strand.components * aScale * scale), 0.0)
 			end
 			if #strand.components - index > 3 then percent = 0 end --#TODO: Quick test of limiter
 		else
 			if aMin <= 1.0 - thresholdPercent and 1.0 - thresholdPercent <= aMax then
-				percent = math.clamp(1.0, (1.0 - (index - 1) / #strand.components) / (aScale * scale), 0.0)
+				percent = utility.clamp(1.0, (1.0 - (index - 1) / #strand.components) / (aScale * scale), 0.0)
 			end
 			if index > 2 then percent = 0 end --#TODO: Quick test of limiter
 		end
 	else
 		if primaryVertexOffset > 0 then
 			if aMin <= 1.0 - thresholdPercent and 1.0 - thresholdPercent <= aMax then
-				percent = math.clamp(1.0, (index - 1 - (#strand.components * (1.0 - aScale * scale)))
+				percent = utility.clamp(1.0, (index - 1 - (#strand.components * (1.0 - aScale * scale)))
 					/ (#strand.components * aScale * scale), 0.0)
 			end
 			if #strand.components - index > maxSteps - 1 then percent = 0 end --#TODO: Quick test of limiter needs to be one less than below
 		else
 			if aMin <= thresholdPercent and thresholdPercent <= aMax then
-				percent = 1.0 - math.clamp(1.0, (index / #strand.components) / (aScale * scale), 0.0)
+				percent = 1.0 - utility.clamp(1.0, (index / #strand.components) / (aScale * scale), 0.0)
 			end
 			if index > maxSteps then percent = 0 end --#TODO: Quick test of limiter
 		end

@@ -1,6 +1,3 @@
-local grid = require("grid")
-local math = require("math")
-
 local pixelchecker = {}
 
 -- Returns adjacent pixels in the order of (left, right, up, down)

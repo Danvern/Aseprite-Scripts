@@ -9,7 +9,7 @@ local function createDriver(baseSelection)
 		-- clockwise starting from the top middle
 		facing = 1,
 		spinDirection = 0,
-		driverXY = { 0, 0 },
+		driverXY = { x = 0, y = 0 },
 		borderWeb = {},
 		webCluster = {},
 		visitedPixels = {},
@@ -31,9 +31,9 @@ local function createDriver(baseSelection)
 
 
 	local function getAdjacentInDirection(driver, direction)
-		local checkX = grid.directionsX[direction] + driver.driverXY[1]
-		local checkY = grid.directionsY[direction] + driver.driverXY[2]
-		return { ["x"] = checkX, ["y"] = checkY }
+		local checkX = grid.directionsX[direction] + driver.driverXY.x
+		local checkY = grid.directionsY[direction] + driver.driverXY.y
+		return { x = checkX, y = checkY }
 	end
 
 	-- Returns the coordinates infront of the driver.
@@ -45,9 +45,9 @@ local function createDriver(baseSelection)
 	function newDriver.getAheadWhenRotated(driver, direction)
 		-- local cappedRotation = (driver.facing + direction - 1) % 8 + 1
 		local cappedRotation = rotateFacing(driver.facing, direction)
-		local checkX = grid.directionsX[cappedRotation] + driver.driverXY[1]
-		local checkY = grid.directionsY[cappedRotation] + driver.driverXY[2]
-		return { ["x"] = checkX, ["y"] = checkY }
+		local checkX = grid.directionsX[cappedRotation] + driver.driverXY.x
+		local checkY = grid.directionsY[cappedRotation] + driver.driverXY.y
+		return { x = checkX, y = checkY }
 	end
 
 	-- Returns if driver is facing a selection edge that is within bounds.
@@ -92,7 +92,7 @@ local function createDriver(baseSelection)
 
 	-- Add current position to exploited corners list so calculation is not repeated unnecessarily.
 	function newDriver.markPixel(driver, selectionBounds)
-		driver.visitedPixels[driver.driverXY[1] * selectionBounds.height + driver.driverXY[2]] = true
+		driver.visitedPixels[driver.driverXY.x * selectionBounds.height + driver.driverXY.y] = true
 	end
 
 	-- Rotate clockwise until outside edge is perpendicular to facing direction.
@@ -124,7 +124,7 @@ local function createDriver(baseSelection)
 		repeat
 			--print(" starting strand") - set the start point of the stand
 			if #cleanOrigin == 0 and #driver.borderWeb > 0 then
-				cleanOrigin = { driver.driverXY[1], driver.driverXY[2] }
+				cleanOrigin = { driver.driverXY.x, driver.driverXY.y }
 			end
 
 			-- Check if facing is navigable without direction change, advance and add the coordinate to strand. #TODO Optimize 16 checks to 8
@@ -133,14 +133,14 @@ local function createDriver(baseSelection)
 					and not (driver:isFacingEdgeOffset(driver.spinDirection * -2)
 						and (baseSelection:contains(driver:getAheadWhenRotated(driver.spinDirection * -1).x, driver:getAheadWhenRotated(driver.spinDirection * -1).y) or #strand > 0))) do
 				--print("  added pixel to strand : " .. table.concat(driver, ", "))
-				table.insert(strand, { ["x"] = driver.driverXY[1], ["y"] = driver.driverXY[2] })
+				table.insert(strand, { ["x"] = driver.driverXY.x, ["y"] = driver.driverXY.y })
 				driver:markPixel(baseSelection.bounds)
 				driver:driveForwards()
 			end
 
 			-- Inserting data for antialiasing later
-			table.insert(strand, { ["x"] = driver.driverXY[1], ["y"] = driver.driverXY[2] })
-			driver:markPixel(driver.visitedPixels, baseSelection.bounds)
+			table.insert(strand, { ["x"] = driver.driverXY.x, ["y"] = driver.driverXY.y })
+			driver:markPixel(baseSelection.bounds)
 			table.insert(driver.borderWeb,
 				{
 					["components"] = strand,
@@ -172,7 +172,7 @@ local function createDriver(baseSelection)
 
 	function newDriver.drive(driver, baseSelection, corners)
 		-- Only perform calculations if not already visited.
-		if driver.visitedPixels[driver.driverXY[1] * baseSelection.bounds.height + driver.driverXY[2]] ~= nil then
+		if driver.visitedPixels[driver.driverXY.x * baseSelection.bounds.height + driver.driverXY.y] ~= nil then
 			return
 		end
 
@@ -195,7 +195,8 @@ function pixeldriver.driveAll(baseSelection, corners)
 	local driver = createDriver(baseSelection)
 	-- generate a series of looped border data
 	for _, coord in ipairs(corners) do
-		driver.driverXY = coord
+		driver.driverXY.x = coord[1]
+		driver.driverXY.y = coord[2]
 		driver:drive(baseSelection, corners)
 	end
 	return driver
