@@ -1,5 +1,5 @@
 luaunit = require('luaunit')
-pixeldriver = require("../pixeldriver")
+pixeldriver = require("src.aatool.pixeldriver")
 
 local function getDummySelection()
 	return { 0, 0 }

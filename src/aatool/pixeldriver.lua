@@ -1,5 +1,5 @@
-local pixelchecker = require("pixelchecker")
-local grid = require("grid")
+local pixelchecker = require("src.aatool.pixelchecker")
+local grid = require("src.aatool.grid")
 
 local pixeldriver = {}
 
