@@ -6,9 +6,11 @@ local function getDummySelection()
 end
 
 TestCreateDriver = {}
-function TestCreateDriver:testInitiation()
+function testInitiation()
 	local selection = getDummySelection()
+	luaunit.assertNotIsNil(pixeldriver, "Import Failed")
 	local newDriver = pixeldriver.createDriver(selection)
+
 	luaunit.assertEquals(newDriver.facing, 1, "Facing not initialized to 1")
 	luaunit.assertEquals(newDriver.spinDirection, 0, "Facing not initialized to 0 (no inherent spin)")
 	luaunit.assertEquals(newDriver.driverXY, { 0, 0 }, "Position not initialized to { 0, 0 }")

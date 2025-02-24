@@ -1,5 +1,5 @@
-local cornercutter = require("cornercutter")
-local pixelcolor = require("pixelcolor")
+local cornercutter = require("aatool.cornercutter")
+local pixelcolor = require("aatool.pixelcolor")
 
 local commandName = "Auto-Antialias"
 

@@ -4,7 +4,7 @@ local grid = require("src.aatool.grid")
 local pixeldriver = {}
 
 
-local function createDriver(baseSelection)
+function pixeldriver.createDriver(baseSelection)
 	local newDriver = {
 		-- clockwise starting from the top middle
 		facing = 1,
@@ -191,7 +191,7 @@ local function createDriver(baseSelection)
 end
 
 function pixeldriver.driveAll(baseSelection, corners)
-	local driver = createDriver(baseSelection)
+	local driver = pixeldriver.createDriver(baseSelection)
 	-- generate a series of looped border data
 	for _, coord in ipairs(corners) do
 		driver.driverXY.x = coord[1]
