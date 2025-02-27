@@ -27,5 +27,17 @@ function testFacingAhead()
 	luaunit.assertEquals(newDriver:getAheadImFacing(), { x=0, y=-1}, "Facing not initialized to 1")
 	newDriver.facing = 2; --//TODO: Test local functions???
 	luaunit.assertEquals(newDriver:getAheadImFacing(), { x=1, y=-1 }, "Facing not reading properly from ahead after set")
+	newDriver.facing = 3; --//TODO: Test local functions???
+	luaunit.assertEquals(newDriver:getAheadImFacing(), { x=1, y=0 }, "Facing not reading properly from ahead after set")
+	newDriver.facing = 4; --//TODO: Test local functions???
+	luaunit.assertEquals(newDriver:getAheadImFacing(), { x=1, y=1 }, "Facing not reading properly from ahead after set")
+	newDriver.facing = 5; --//TODO: Test local functions???
+	luaunit.assertEquals(newDriver:getAheadImFacing(), { x=0, y=1 }, "Facing not reading properly from ahead after set")
+	newDriver.facing = 6; --//TODO: Test local functions???
+	luaunit.assertEquals(newDriver:getAheadImFacing(), { x=-1, y=1 }, "Facing not reading properly from ahead after set")
+	newDriver.facing = 7; --//TODO: Test local functions???
+	luaunit.assertEquals(newDriver:getAheadImFacing(), { x=-1, y=0 }, "Facing not reading properly from ahead after set")
+	newDriver.facing = 8; --//TODO: Test local functions???
+	luaunit.assertEquals(newDriver:getAheadImFacing(), { x=-1, y=-1 }, "Facing not reading properly from ahead after set")
 end
 os.exit(luaunit.LuaUnit.run())
