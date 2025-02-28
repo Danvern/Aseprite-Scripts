@@ -39,5 +39,7 @@ function testFacingAhead()
 	luaunit.assertEquals(newDriver:getAheadImFacing(), { x=-1, y=0 }, "Facing not reading properly from ahead after set")
 	newDriver.facing = 8; --//TODO: Test local functions???
 	luaunit.assertEquals(newDriver:getAheadImFacing(), { x=-1, y=-1 }, "Facing not reading properly from ahead after set")
+
+	--//TODO: Do this test moving the position.
 end
 os.exit(luaunit.LuaUnit.run())
